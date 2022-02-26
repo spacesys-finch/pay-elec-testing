@@ -145,13 +145,13 @@ int main(void)
   while (1)
   {
 	  // toggle_test();
-	  uint8_t slaveAddress = 0x41;
-	  uint8_t reg = 0xDA;
+	  uint8_t slaveAddress = 0x68;
+	  uint8_t reg = 0x02;
 	  uint8_t *data;
 	  *data = 0x00;
 
 	  read_reg(slaveAddress, reg, data);
-	  printf("data: %X\n", *data);
+	  printf("data: %X\n", reg, *data);
 	  HAL_Delay(500);
 
 
