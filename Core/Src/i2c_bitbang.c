@@ -7,6 +7,10 @@
 
 #include "i2c_bitbang.h"
 
+// GPIO toggle frequency for SCL seems to max out at about 70kHz regardless of how short the I2C_BIT_DELAY is
+#define I2C_BIT_DELAY 		5 // microseconds -> 1/I2C_FREQ = I2C_BIT_DELAY, usually I2C_FREQ = 100kHz
+#define I2C_PACKET_DELAY 	20 // microseconds
+
 /*
  * I2C2 default initialization
  * PF0	I2C2_SDA	n/a	n/a	Alternate Function Open Drain	No pull-up and no pull-down	Low	n/a		false
@@ -56,6 +60,10 @@ void i2c_bitbang_init(){
 	sda_init.Speed = GPIO_SPEED_FREQ_HIGH;
 
 	HAL_GPIO_Init(sda.bank, &sda_init); // init
+
+	// set both to high
+	set_sda();
+	set_scl();
 }
 
 
@@ -126,7 +134,7 @@ void i2c_send_start(void){
 	// SDA transitions HIGH -> LOW when SCL is HIGH
 	// assume starting SCL is LOW (by default, start of transmission)
 	clear_sda();
-	delay_us(20); // wait a bit
+	delay_us(I2C_BIT_DELAY);
 	clear_scl();
 	i2c_started = 1;
 }
@@ -136,9 +144,9 @@ void i2c_send_stop(void){
 	// SCL rises when SDA is low, then SDA rises
 	// assume starting SCL is LOW (finished transmission)
 	clear_sda();
-	delay_us(20); // wait a bit
+	delay_us(I2C_BIT_DELAY);
 	set_scl();
-	delay_us(20);
+	delay_us(I2C_BIT_DELAY);
 	set_sda();
 }
 
@@ -149,9 +157,9 @@ uint8_t i2c_read_bit(void){
 	uint8_t bit;
 
 	set_sda();		// let target drive SDA
-	delay_us(20);
+	delay_us(I2C_BIT_DELAY);
 	set_scl();		// indicate slave can write to SDA
-	delay_us(20);
+	delay_us(I2C_BIT_DELAY);
 	bit = read_sda();
 	clear_scl();	// clear SCL in preparation for next operation
 
@@ -166,9 +174,9 @@ void i2c_write_bit(uint8_t bit){
 	else{
 		clear_sda();
 	}
-	delay_us(20);
+	delay_us(I2C_BIT_DELAY);
 	set_scl();		// tell slave SDA is ready
-	delay_us(20);
+	delay_us(I2C_BIT_DELAY);
 
 	clear_scl(); 	// clear SCL in preparation for next operation
 }
@@ -204,16 +212,18 @@ void i2c_write_byte(uint8_t byte){
 void read_reg(uint8_t slaveAddress, uint8_t reg, uint8_t *pData){
 	i2c_send_start();
 
+	delay_us(I2C_BIT_DELAY);
+
 	i2c_write_byte(slaveAddress & 0x0FE); // 7 bits
-	delay_us(50);
+	delay_us(I2C_PACKET_DELAY);
 	i2c_write_byte(reg);
-	delay_us(50);
+	delay_us(I2C_PACKET_DELAY);
 	i2c_send_stop();
 
 	delay_us(100);
 
 	i2c_write_byte(slaveAddress & 0x0FE);
-	delay_us(50);
+	delay_us(I2C_PACKET_DELAY);
 	*pData = i2c_read_byte();
 	i2c_send_stop();
 }
@@ -221,17 +231,19 @@ void read_reg(uint8_t slaveAddress, uint8_t reg, uint8_t *pData){
 void write_reg(uint8_t slaveAddress, uint8_t reg, uint8_t *pData){
 	i2c_send_start();
 
+	delay_us(I2C_PACKET_DELAY);
+
 	i2c_write_byte(slaveAddress & 0x0FE); // 7 bits
-	delay_us(50);
+	delay_us(I2C_PACKET_DELAY);
 	i2c_write_byte(reg);
-	delay_us(50);
+	delay_us(I2C_PACKET_DELAY);
 	i2c_write_byte(*pData);
 	i2c_send_stop();
 
 	delay_us(100);
 
 	i2c_write_byte(slaveAddress & 0x0FE);
-	delay_us(50);
+	delay_us(I2C_PACKET_DELAY);
 	*pData = i2c_read_byte();
 	i2c_send_stop();
 }
