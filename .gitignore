@@ -1,0 +1,14 @@
+/*
+!/OV7675_test
+!/bitbanging-i2c
+OV7675_test/*
+!OV7675_test/Core
+OV7675_test/Core/*
+!OV7675_test/Core/Src
+!OV7675_test/Core/Inc
+!.gitignore
+!*.md
+!*.c
+!*.cpp
+!*.h
+!*.ioc
