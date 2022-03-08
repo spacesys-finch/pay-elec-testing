@@ -93,6 +93,7 @@ static void MX_USB_OTG_FS_PCD_Init(void);
 #else
 #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
 #endif /* __GNUC__ */
+// ============== end substitute =============
 
 /* USER CODE END PFP */
 
