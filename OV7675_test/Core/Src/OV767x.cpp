@@ -7,9 +7,6 @@
 
 #include "OV767X.h"
 
-// want to use Arduino wrappers for functions
-#define ARDUINO
-
 // if not defined in the variant
 //#ifndef digitalPinToBitMask
 //#define digitalPinToBitMask(P) (1 << (digitalPinToPinName(P) % 32))

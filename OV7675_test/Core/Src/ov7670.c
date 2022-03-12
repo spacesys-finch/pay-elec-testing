@@ -8,7 +8,6 @@
  *
  * Copyright 2006-7 Jonathan Corbet <corbet@lwn.net>
  */
-#ifdef ARDUINO
 
 #include <errno.h>
 #include <stdbool.h>
@@ -24,8 +23,8 @@ struct v4l2_subdev {
 };
 
 struct v4l2_fract {
-	uint32_t numerator;
-	uint32_t denominator;
+	u32 numerator;
+	u32 denominator;
 };
 
 #define VGA_WIDTH 640
@@ -51,15 +50,6 @@ extern int arduino_i2c_write(unsigned short address, unsigned char reg, unsigned
 
 #include "ov7670.h"
 
-#else
-MODULE_AUTHOR("Jonathan Corbet <corbet@lwn.net>");
-MODULE_DESCRIPTION("A low-level driver for OmniVision ov7670 sensors");
-MODULE_LICENSE("GPL");
-
-static bool debug;
-module_param(debug, bool, 0644);
-MODULE_PARM_DESC(debug, "Debug level (0-1)");
-#endif
 
 /*
  * The 7670 sits on i2c with ID 0x42
@@ -249,34 +239,12 @@ struct ov7670_info {
 #if defined(CONFIG_MEDIA_CONTROLLER)
 	struct media_pad pad;
 #endif
-#ifndef ARDUINO
-	struct v4l2_ctrl_handler hdl;
-	struct {
-		/* gain cluster */
-		struct v4l2_ctrl *auto_gain;
-		struct v4l2_ctrl *gain;
-	};
-	struct {
-		/* exposure cluster */
-		struct v4l2_ctrl *auto_exposure;
-		struct v4l2_ctrl *exposure;
-	};
-	struct {
-		/* saturation/hue cluster */
-		struct v4l2_ctrl *saturation;
-		struct v4l2_ctrl *hue;
-	};
-	struct v4l2_mbus_framefmt format;
-#endif
+
 	struct ov7670_format_struct *fmt;  /* Current format */
 	struct ov7670_win_size *wsize;
 	struct clk *clk;
 	int on;
-#ifndef ARDUINO
-	struct gpio_desc *resetb_gpio;
-	struct gpio_desc *pwdn_gpio;
-	unsigned int mbus_config;	/* Media bus configuration flags */
-#endif
+
 	int min_width;			/* Filter out smaller sizes */
 	int min_height;			/* Filter out smaller sizes */
 	int clock_speed;		/* External clock speed (MHz) */
@@ -289,20 +257,8 @@ struct ov7670_info {
 
 static inline struct ov7670_info *to_state(struct v4l2_subdev *sd)
 {
-#ifdef ARDUINO
 	return (struct ov7670_info*)sd;
-#else
-	return container_of(sd, struct ov7670_info, sd);
-#endif
 }
-
-#ifndef ARDUINO
-static inline struct v4l2_subdev *to_sd(struct v4l2_ctrl *ctrl)
-{
-	return &container_of(ctrl->handler, struct ov7670_info, hdl)->sd;
-}
-#endif
-
 
 
 /*
@@ -504,8 +460,6 @@ static struct regval_list ov7670_fmt_raw[] = {
 };
 
 
-#ifdef ARDUINO
-
 static int ov7670_read(struct v4l2_subdev *sd, unsigned char reg,
 		unsigned char *value)
 {
@@ -523,117 +477,6 @@ static int ov7670_write(struct v4l2_subdev *sd, unsigned char reg,
 	return ret;
 }
 
-#else
-/*
- * Low-level register I/O.
- *
- * Note that there are two versions of these.  On the XO 1, the
- * i2c controller only does SMBUS, so that's what we use.  The
- * ov7670 is not really an SMBUS device, though, so the communication
- * is not always entirely reliable.
- */
-static int ov7670_read_smbus(struct v4l2_subdev *sd, unsigned char reg,
-		unsigned char *value)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	int ret;
-
-	ret = i2c_smbus_read_byte_data(client, reg);
-	if (ret >= 0) {
-		*value = (unsigned char)ret;
-		ret = 0;
-	}
-	return ret;
-}
-
-
-static int ov7670_write_smbus(struct v4l2_subdev *sd, unsigned char reg,
-		unsigned char value)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	int ret = i2c_smbus_write_byte_data(client, reg, value);
-
-	if (reg == REG_COM7 && (value & COM7_RESET))
-		msleep(5);  /* Wait for reset to run */
-	return ret;
-}
-
-/*
- * On most platforms, we'd rather do straight i2c I/O.
- */
-static int ov7670_read_i2c(struct v4l2_subdev *sd, unsigned char reg,
-		unsigned char *value)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	u8 data = reg;
-	struct i2c_msg msg;
-	int ret;
-
-	/*
-	 * Send out the register address...
-	 */
-	msg.addr = client->addr;
-	msg.flags = 0;
-	msg.len = 1;
-	msg.buf = &data;
-	ret = i2c_transfer(client->adapter, &msg, 1);
-	if (ret < 0) {
-		printk(KERN_ERR "Error %d on register write\n", ret);
-		return ret;
-	}
-	/*
-	 * ...then read back the result.
-	 */
-	msg.flags = I2C_M_RD;
-	ret = i2c_transfer(client->adapter, &msg, 1);
-	if (ret >= 0) {
-		*value = data;
-		ret = 0;
-	}
-	return ret;
-}
-
-
-static int ov7670_write_i2c(struct v4l2_subdev *sd, unsigned char reg,
-		unsigned char value)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct i2c_msg msg;
-	unsigned char data[2] = { reg, value };
-	int ret;
-
-	msg.addr = client->addr;
-	msg.flags = 0;
-	msg.len = 2;
-	msg.buf = data;
-	ret = i2c_transfer(client->adapter, &msg, 1);
-	if (ret > 0)
-		ret = 0;
-	if (reg == REG_COM7 && (value & COM7_RESET))
-		msleep(5);  /* Wait for reset to run */
-	return ret;
-}
-
-static int ov7670_read(struct v4l2_subdev *sd, unsigned char reg,
-		unsigned char *value)
-{
-	struct ov7670_info *info = to_state(sd);
-	if (info->use_smbus)
-		return ov7670_read_smbus(sd, reg, value);
-	else
-		return ov7670_read_i2c(sd, reg, value);
-}
-
-static int ov7670_write(struct v4l2_subdev *sd, unsigned char reg,
-		unsigned char value)
-{
-	struct ov7670_info *info = to_state(sd);
-	if (info->use_smbus)
-		return ov7670_write_smbus(sd, reg, value);
-	else
-		return ov7670_write_i2c(sd, reg, value);
-}
-#endif
 
 static int ov7670_update_bits(struct v4l2_subdev *sd, unsigned char reg,
 		unsigned char mask, unsigned char value)
@@ -666,11 +509,7 @@ static int ov7670_write_array(struct v4l2_subdev *sd, struct regval_list *vals)
 /*
  * Stuff that knows about the sensor.
  */
-#ifdef ARDUINO
 int ov7670_reset(struct v4l2_subdev *sd, u32 val)
-#else
-static int ov7670_reset(struct v4l2_subdev *sd, u32 val)
-#endif
 {
 	ov7670_write(sd, REG_COM7, COM7_RESET);
 	msleep(1);
@@ -683,11 +522,7 @@ static int ov7670_init(struct v4l2_subdev *sd, u32 val)
 	return ov7670_write_array(sd, ov7670_default_regs);
 }
 
-#ifdef ARDUINO
 int ov7670_detect(struct v4l2_subdev *sd)
-#else
-static int ov7670_detect(struct v4l2_subdev *sd)
-#endif
 {
 	unsigned char v;
 	int ret;
@@ -728,42 +563,22 @@ static int ov7670_detect(struct v4l2_subdev *sd)
  * The magic matrix numbers come from OmniVision.
  */
 static struct ov7670_format_struct {
-#ifndef ARDUINO
-	u32 mbus_code;
-	enum v4l2_colorspace colorspace;
-#endif
 	struct regval_list *regs;
 	int cmatrix[CMATRIX_LEN];
 } ov7670_formats[] = {
 	{
-#ifndef ARDUINO
-		.mbus_code	= MEDIA_BUS_FMT_YUYV8_2X8,
-		.colorspace	= V4L2_COLORSPACE_SRGB,
-#endif
 		.regs		= ov7670_fmt_yuv422,
 		.cmatrix	= { 128, -128, 0, -34, -94, 128 },
 	},
 	{
-#ifndef ARDUINO
-		.mbus_code	= MEDIA_BUS_FMT_RGB444_2X8_PADHI_LE,
-		.colorspace	= V4L2_COLORSPACE_SRGB,
-#endif
 		.regs		= ov7670_fmt_rgb444,
 		.cmatrix	= { 179, -179, 0, -61, -176, 228 },
 	},
 	{
-#ifndef ARDUINO
-		.mbus_code	= MEDIA_BUS_FMT_RGB565_2X8_LE,
-		.colorspace	= V4L2_COLORSPACE_SRGB,
-#endif
 		.regs		= ov7670_fmt_rgb565,
 		.cmatrix	= { 179, -179, 0, -61, -176, 228 },
 	},
 	{
-#ifndef ARDUINO
-		.mbus_code	= MEDIA_BUS_FMT_SBGGR8_1X8,
-		.colorspace	= V4L2_COLORSPACE_SRGB,
-#endif
 		.regs		= ov7670_fmt_raw,
 		.cmatrix	= { 0, 0, 0, 0, 0, 0 },
 	},
@@ -966,10 +781,6 @@ static void ov7675_get_framerate(struct v4l2_subdev *sd,
 		pll_factor = PLL_FACTOR;
 
 	clkrc++;
-#ifndef ARDUINO
-	if (info->fmt->mbus_code == MEDIA_BUS_FMT_SBGGR8_1X8)
-		clkrc = (clkrc >> 1);
-#endif
 
 	tpf->numerator = 1;
 	tpf->denominator = (5 * pll_factor * info->clock_speed) /
@@ -989,12 +800,7 @@ static int ov7675_apply_framerate(struct v4l2_subdev *sd)
 			    info->pll_bypass ? DBLV_BYPASS : DBLV_X4);
 }
 
-#ifdef ARDUINO
 int ov7675_set_framerate(struct v4l2_subdev *sd, struct v4l2_fract *tpf)
-#else
-static int ov7675_set_framerate(struct v4l2_subdev *sd,
-				 struct v4l2_fract *tpf)
-#endif
 {
 	struct ov7670_info *info = to_state(sd);
 	u32 clkrc;
@@ -1013,10 +819,6 @@ static int ov7675_set_framerate(struct v4l2_subdev *sd,
 		pll_factor = info->pll_bypass ? 1 : PLL_FACTOR;
 		clkrc = (5 * pll_factor * info->clock_speed * tpf->numerator) /
 			(4 * tpf->denominator);
-#ifndef ARDUINO
-		if (info->fmt->mbus_code == MEDIA_BUS_FMT_SBGGR8_1X8)
-			clkrc = (clkrc << 1);
-#endif
 		clkrc--;
 	}
 
@@ -1117,83 +919,6 @@ static int ov7670_set_hw(struct v4l2_subdev *sd, int hstart, int hstop,
 }
 
 
-#ifndef ARDUINO
-static int ov7670_enum_mbus_code(struct v4l2_subdev *sd,
-		struct v4l2_subdev_pad_config *cfg,
-		struct v4l2_subdev_mbus_code_enum *code)
-{
-	if (code->pad || code->index >= N_OV7670_FMTS)
-		return -EINVAL;
-
-	code->code = ov7670_formats[code->index].mbus_code;
-	return 0;
-}
-
-static int ov7670_try_fmt_internal(struct v4l2_subdev *sd,
-		struct v4l2_mbus_framefmt *fmt,
-		struct ov7670_format_struct **ret_fmt,
-		struct ov7670_win_size **ret_wsize)
-{
-	int index, i;
-	struct ov7670_win_size *wsize;
-	struct ov7670_info *info = to_state(sd);
-	unsigned int n_win_sizes = info->devtype->n_win_sizes;
-	unsigned int win_sizes_limit = n_win_sizes;
-
-	for (index = 0; index < N_OV7670_FMTS; index++)
-		if (ov7670_formats[index].mbus_code == fmt->code)
-			break;
-	if (index >= N_OV7670_FMTS) {
-		/* default to first format */
-		index = 0;
-		fmt->code = ov7670_formats[0].mbus_code;
-	}
-	if (ret_fmt != NULL)
-		*ret_fmt = ov7670_formats + index;
-	/*
-	 * Fields: the OV devices claim to be progressive.
-	 */
-	fmt->field = V4L2_FIELD_NONE;
-
-	/*
-	 * Don't consider values that don't match min_height and min_width
-	 * constraints.
-	 */
-	if (info->min_width || info->min_height)
-		for (i = 0; i < n_win_sizes; i++) {
-			wsize = info->devtype->win_sizes + i;
-
-			if (wsize->width < info->min_width ||
-				wsize->height < info->min_height) {
-				win_sizes_limit = i;
-				break;
-			}
-		}
-	/*
-	 * Round requested image size down to the nearest
-	 * we support, but not below the smallest.
-	 */
-	for (wsize = info->devtype->win_sizes;
-	     wsize < info->devtype->win_sizes + win_sizes_limit; wsize++)
-		if (fmt->width >= wsize->width && fmt->height >= wsize->height)
-			break;
-	if (wsize >= info->devtype->win_sizes + win_sizes_limit)
-		wsize--;   /* Take the smallest one */
-	if (ret_wsize != NULL)
-		*ret_wsize = wsize;
-	/*
-	 * Note the size we'll actually handle.
-	 */
-	fmt->width = wsize->width;
-	fmt->height = wsize->height;
-	fmt->colorspace = ov7670_formats[index].colorspace;
-
-	info->format = *fmt;
-
-	return 0;
-}
-#endif
-
 static int ov7670_apply_fmt(struct v4l2_subdev *sd)
 {
 	struct ov7670_info *info = to_state(sd);
@@ -1216,12 +941,6 @@ static int ov7670_apply_fmt(struct v4l2_subdev *sd)
 	/*
 	 * Configure the media bus through COM10 register
 	 */
-#ifndef ARDUINO
-	if (info->mbus_config & V4L2_MBUS_VSYNC_ACTIVE_LOW)
-		com10 |= COM10_VS_NEG;
-	if (info->mbus_config & V4L2_MBUS_HSYNC_ACTIVE_LOW)
-		com10 |= COM10_HREF_REV;
-#endif
 	if (info->pclk_hb_disable)
 		com10 |= COM10_PCLK_HB;
 	ret = ov7670_write(sd, REG_COM10, com10);
@@ -1262,180 +981,6 @@ static int ov7670_apply_fmt(struct v4l2_subdev *sd)
 
 	return 0;
 }
-
-#ifndef ARDUINO
-/*
- * Set a format.
- */
-static int ov7670_set_fmt(struct v4l2_subdev *sd,
-		struct v4l2_subdev_pad_config *cfg,
-		struct v4l2_subdev_format *format)
-{
-	struct ov7670_info *info = to_state(sd);
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-	struct v4l2_mbus_framefmt *mbus_fmt;
-#endif
-	int ret;
-
-	if (format->pad)
-		return -EINVAL;
-
-	if (format->which == V4L2_SUBDEV_FORMAT_TRY) {
-		ret = ov7670_try_fmt_internal(sd, &format->format, NULL, NULL);
-		if (ret)
-			return ret;
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-		mbus_fmt = v4l2_subdev_get_try_format(sd, cfg, format->pad);
-		*mbus_fmt = format->format;
-#endif
-		return 0;
-	}
-
-	ret = ov7670_try_fmt_internal(sd, &format->format, &info->fmt, &info->wsize);
-	if (ret)
-		return ret;
-
-	/*
-	 * If the device is not powered up by the host driver do
-	 * not apply any changes to H/W at this time. Instead
-	 * the frame format will be restored right after power-up.
-	 */
-	if (info->on)
-		return ov7670_apply_fmt(sd);
-
-	return 0;
-}
-
-static int ov7670_get_fmt(struct v4l2_subdev *sd,
-			  struct v4l2_subdev_pad_config *cfg,
-			  struct v4l2_subdev_format *format)
-{
-	struct ov7670_info *info = to_state(sd);
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-	struct v4l2_mbus_framefmt *mbus_fmt;
-#endif
-
-	if (format->which == V4L2_SUBDEV_FORMAT_TRY) {
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-		mbus_fmt = v4l2_subdev_get_try_format(sd, cfg, 0);
-		format->format = *mbus_fmt;
-		return 0;
-#else
-		return -EINVAL;
-#endif
-	} else {
-		format->format = info->format;
-	}
-
-	return 0;
-}
-
-/*
- * Implement G/S_PARM.  There is a "high quality" mode we could try
- * to do someday; for now, we just do the frame rate tweak.
- */
-static int ov7670_g_frame_interval(struct v4l2_subdev *sd,
-				   struct v4l2_subdev_frame_interval *ival)
-{
-	struct ov7670_info *info = to_state(sd);
-
-
-	info->devtype->get_framerate(sd, &ival->interval);
-
-	return 0;
-}
-
-static int ov7670_s_frame_interval(struct v4l2_subdev *sd,
-				   struct v4l2_subdev_frame_interval *ival)
-{
-	struct v4l2_fract *tpf = &ival->interval;
-	struct ov7670_info *info = to_state(sd);
-
-
-	return info->devtype->set_framerate(sd, tpf);
-}
-
-
-/*
- * Frame intervals.  Since frame rates are controlled with the clock
- * divider, we can only do 30/n for integer n values.  So no continuous
- * or stepwise options.  Here we just pick a handful of logical values.
- */
-
-static int ov7670_frame_rates[] = { 30, 15, 10, 5, 1 };
-
-static int ov7670_enum_frame_interval(struct v4l2_subdev *sd,
-				      struct v4l2_subdev_pad_config *cfg,
-				      struct v4l2_subdev_frame_interval_enum *fie)
-{
-	struct ov7670_info *info = to_state(sd);
-	unsigned int n_win_sizes = info->devtype->n_win_sizes;
-	int i;
-
-	if (fie->pad)
-		return -EINVAL;
-	if (fie->index >= ARRAY_SIZE(ov7670_frame_rates))
-		return -EINVAL;
-
-	/*
-	 * Check if the width/height is valid.
-	 *
-	 * If a minimum width/height was requested, filter out the capture
-	 * windows that fall outside that.
-	 */
-	for (i = 0; i < n_win_sizes; i++) {
-		struct ov7670_win_size *win = &info->devtype->win_sizes[i];
-
-		if (info->min_width && win->width < info->min_width)
-			continue;
-		if (info->min_height && win->height < info->min_height)
-			continue;
-		if (fie->width == win->width && fie->height == win->height)
-			break;
-	}
-	if (i == n_win_sizes)
-		return -EINVAL;
-	fie->interval.numerator = 1;
-	fie->interval.denominator = ov7670_frame_rates[fie->index];
-	return 0;
-}
-
-/*
- * Frame size enumeration
- */
-static int ov7670_enum_frame_size(struct v4l2_subdev *sd,
-				  struct v4l2_subdev_pad_config *cfg,
-				  struct v4l2_subdev_frame_size_enum *fse)
-{
-	struct ov7670_info *info = to_state(sd);
-	int i;
-	int num_valid = -1;
-	__u32 index = fse->index;
-	unsigned int n_win_sizes = info->devtype->n_win_sizes;
-
-	if (fse->pad)
-		return -EINVAL;
-
-	/*
-	 * If a minimum width/height was requested, filter out the capture
-	 * windows that fall outside that.
-	 */
-	for (i = 0; i < n_win_sizes; i++) {
-		struct ov7670_win_size *win = &info->devtype->win_sizes[i];
-		if (info->min_width && win->width < info->min_width)
-			continue;
-		if (info->min_height && win->height < info->min_height)
-			continue;
-		if (index == ++num_valid) {
-			fse->min_width = fse->max_width = win->width;
-			fse->min_height = fse->max_height = win->height;
-			return 0;
-		}
-	}
-
-	return -EINVAL;
-}
-#endif
 
 /*
  * Code for dealing with controls.
@@ -1522,9 +1067,6 @@ static int ov7670_cosine(int theta)
 	return ov7670_sine(theta);
 }
 
-
-
-
 static void ov7670_calc_cmatrix(struct ov7670_info *info,
 		int matrix[CMATRIX_LEN], int sat, int hue)
 {
@@ -1553,13 +1095,7 @@ static void ov7670_calc_cmatrix(struct ov7670_info *info,
 	}
 }
 
-
-
-#ifdef ARDUINO
 int ov7670_s_sat_hue(struct v4l2_subdev *sd, int sat, int hue)
-#else
-static int ov7670_s_sat_hue(struct v4l2_subdev *sd, int sat, int hue)
-#endif
 {
 	struct ov7670_info *info = to_state(sd);
 	int matrix[CMATRIX_LEN];
@@ -1569,7 +1105,6 @@ static int ov7670_s_sat_hue(struct v4l2_subdev *sd, int sat, int hue)
 	ret = ov7670_store_cmatrix(sd, matrix);
 	return ret;
 }
-
 
 /*
  * Some weird registers seem to store values in a sign/magnitude format!
@@ -1582,11 +1117,8 @@ static unsigned char ov7670_abs_to_sm(unsigned char v)
 	return (128 - v) | 0x80;
 }
 
-#ifdef ARDUINO
+
 int ov7670_s_brightness(struct v4l2_subdev *sd, int value)
-#else
-static int ov7670_s_brightness(struct v4l2_subdev *sd, int value)
-#endif
 {
 	unsigned char com8 = 0, v;
 	int ret;
@@ -1599,20 +1131,14 @@ static int ov7670_s_brightness(struct v4l2_subdev *sd, int value)
 	return ret;
 }
 
-#ifdef ARDUINO
+
 int ov7670_s_contrast(struct v4l2_subdev *sd, int value)
-#else
-static int ov7670_s_contrast(struct v4l2_subdev *sd, int value)
-#endif
 {
 	return ov7670_write(sd, REG_CONTRAS, (unsigned char) value);
 }
 
-#ifdef ARDUINO
+
 int ov7670_s_hflip(struct v4l2_subdev *sd, int value)
-#else
-static int ov7670_s_hflip(struct v4l2_subdev *sd, int value)
-#endif
 {
 	unsigned char v = 0;
 	int ret;
@@ -1627,11 +1153,7 @@ static int ov7670_s_hflip(struct v4l2_subdev *sd, int value)
 	return ret;
 }
 
-#ifdef ARDUINO
 int ov7670_s_vflip(struct v4l2_subdev *sd, int value)
-#else
-static int ov7670_s_vflip(struct v4l2_subdev *sd, int value)
-#endif
 {
 	unsigned char v = 0;
 	int ret;
@@ -1646,29 +1168,9 @@ static int ov7670_s_vflip(struct v4l2_subdev *sd, int value)
 	return ret;
 }
 
-#ifndef ARDUINO
-/*
- * GAIN is split between REG_GAIN and REG_VREF[7:6].  If one believes
- * the data sheet, the VREF parts should be the most significant, but
- * experience shows otherwise.  There seems to be little value in
- * messing with the VREF bits, so we leave them alone.
- */
-static int ov7670_g_gain(struct v4l2_subdev *sd, __s32 *value)
-{
-	int ret;
-	unsigned char gain;
 
-	ret = ov7670_read(sd, REG_GAIN, &gain);
-	*value = gain;
-	return ret;
-}
-#endif
 
-#ifdef ARDUINO
 int ov7670_s_gain(struct v4l2_subdev *sd, int value)
-#else
-static int ov7670_s_gain(struct v4l2_subdev *sd, int value)
-#endif
 {
 	int ret;
 	unsigned char com8;
@@ -1685,11 +1187,7 @@ static int ov7670_s_gain(struct v4l2_subdev *sd, int value)
 /*
  * Tweak autogain.
  */
-#ifdef ARDUINO
 int ov7670_s_autogain(struct v4l2_subdev *sd, int value)
-#else
-static int ov7670_s_autogain(struct v4l2_subdev *sd, int value)
-#endif
 {
 	int ret;
 	unsigned char com8;
@@ -1705,11 +1203,7 @@ static int ov7670_s_autogain(struct v4l2_subdev *sd, int value)
 	return ret;
 }
 
-#ifdef ARDUINO
 int ov7670_s_exp(struct v4l2_subdev *sd, int value)
-#else
-static int ov7670_s_exp(struct v4l2_subdev *sd, int value)
-#endif
 {
 	int ret;
 	unsigned char com1, com8, aech, aechh;
@@ -1735,12 +1229,7 @@ static int ov7670_s_exp(struct v4l2_subdev *sd, int value)
 /*
  * Tweak autoexposure.
  */
-#ifdef ARDUINO
 int ov7670_s_autoexp(struct v4l2_subdev *sd, int value)
-#else
-static int ov7670_s_autoexp(struct v4l2_subdev *sd,
-		enum v4l2_exposure_auto_type value)
-#endif
 {
 	int ret;
 	unsigned char com8;
@@ -1756,20 +1245,7 @@ static int ov7670_s_autoexp(struct v4l2_subdev *sd,
 	return ret;
 }
 
-#ifndef ARDUINO
-static const char * const ov7670_test_pattern_menu[] = {
-	"No test output",
-	"Shifting \"1\"",
-	"8-bar color bar",
-	"Fade to gray color bar",
-};
-#endif
-
-#ifdef ARDUINO
 int ov7670_s_test_pattern(struct v4l2_subdev *sd, int value)
-#else
-static int ov7670_s_test_pattern(struct v4l2_subdev *sd, int value)
-#endif
 {
 	int ret;
 
@@ -1781,64 +1257,6 @@ static int ov7670_s_test_pattern(struct v4l2_subdev *sd, int value)
 	return ov7670_update_bits(sd, REG_SCALING_YSC, TEST_PATTTERN_1,
 				value & BIT(1) ? TEST_PATTTERN_1 : 0);
 }
-
-#ifndef ARDUINO
-static int ov7670_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
-{
-	struct v4l2_subdev *sd = to_sd(ctrl);
-	struct ov7670_info *info = to_state(sd);
-
-	switch (ctrl->id) {
-	case V4L2_CID_AUTOGAIN:
-		return ov7670_g_gain(sd, &info->gain->val);
-	}
-	return -EINVAL;
-}
-
-static int ov7670_s_ctrl(struct v4l2_ctrl *ctrl)
-{
-	struct v4l2_subdev *sd = to_sd(ctrl);
-	struct ov7670_info *info = to_state(sd);
-
-	switch (ctrl->id) {
-	case V4L2_CID_BRIGHTNESS:
-		return ov7670_s_brightness(sd, ctrl->val);
-	case V4L2_CID_CONTRAST:
-		return ov7670_s_contrast(sd, ctrl->val);
-	case V4L2_CID_SATURATION:
-		return ov7670_s_sat_hue(sd,
-				info->saturation->val, info->hue->val);
-	case V4L2_CID_VFLIP:
-		return ov7670_s_vflip(sd, ctrl->val);
-	case V4L2_CID_HFLIP:
-		return ov7670_s_hflip(sd, ctrl->val);
-	case V4L2_CID_AUTOGAIN:
-		/* Only set manual gain if auto gain is not explicitly
-		   turned on. */
-		if (!ctrl->val) {
-			/* ov7670_s_gain turns off auto gain */
-			return ov7670_s_gain(sd, info->gain->val);
-		}
-		return ov7670_s_autogain(sd, ctrl->val);
-	case V4L2_CID_EXPOSURE_AUTO:
-		/* Only set manual exposure if auto exposure is not explicitly
-		   turned on. */
-		if (ctrl->val == V4L2_EXPOSURE_MANUAL) {
-			/* ov7670_s_exp turns off auto exposure */
-			return ov7670_s_exp(sd, info->exposure->val);
-		}
-		return ov7670_s_autoexp(sd, ctrl->val);
-	case V4L2_CID_TEST_PATTERN:
-		return ov7670_s_test_pattern(sd, ctrl->val);
-	}
-	return -EINVAL;
-}
-
-static const struct v4l2_ctrl_ops ov7670_ctrl_ops = {
-	.s_ctrl = ov7670_s_ctrl,
-	.g_volatile_ctrl = ov7670_g_volatile_ctrl,
-};
-#endif
 
 #ifdef CONFIG_VIDEO_ADV_DEBUG
 static int ov7670_g_register(struct v4l2_subdev *sd, struct v4l2_dbg_register *reg)
@@ -1866,21 +1284,7 @@ static void ov7670_power_on(struct v4l2_subdev *sd)
 	if (info->on)
 		return;
 
-#ifndef ARDUINO
-	clk_prepare_enable(info->clk);
-
-	if (info->pwdn_gpio)
-		gpiod_set_value(info->pwdn_gpio, 0);
-	if (info->resetb_gpio) {
-		gpiod_set_value(info->resetb_gpio, 1);
-		usleep_range(500, 1000);
-		gpiod_set_value(info->resetb_gpio, 0);
-	}
-	if (info->pwdn_gpio || info->resetb_gpio || info->clk)
-		usleep_range(3000, 5000);
-#endif
-
-	info->on = true;
+	info->on = 1;
 }
 
 static void ov7670_power_off(struct v4l2_subdev *sd)
@@ -1890,21 +1294,10 @@ static void ov7670_power_off(struct v4l2_subdev *sd)
 	if (!info->on)
 		return;
 
-#ifndef ARDUINO
-	clk_disable_unprepare(info->clk);
-
-	if (info->pwdn_gpio)
-		gpiod_set_value(info->pwdn_gpio, 1);
-#endif
-
-	info->on = false;
+	info->on = 0;
 }
 
-#ifdef ARDUINO
 int ov7670_s_power(struct v4l2_subdev *sd, int on)
-#else
-static int ov7670_s_power(struct v4l2_subdev *sd, int on)
-#endif
 {
 	struct ov7670_info *info = to_state(sd);
 
@@ -1916,83 +1309,12 @@ static int ov7670_s_power(struct v4l2_subdev *sd, int on)
 		ov7670_init(sd, 0);
 		ov7670_apply_fmt(sd);
 		ov7675_apply_framerate(sd);
-#ifndef ARDUINO
-		v4l2_ctrl_handler_setup(&info->hdl);
-#endif
 	} else {
 		ov7670_power_off (sd);
 	}
 
 	return 0;
 }
-
-#ifndef ARDUINO
-
-static void ov7670_get_default_format(struct v4l2_subdev *sd,
-				      struct v4l2_mbus_framefmt *format)
-{
-	struct ov7670_info *info = to_state(sd);
-
-	format->width = info->devtype->win_sizes[0].width;
-	format->height = info->devtype->win_sizes[0].height;
-	format->colorspace = info->fmt->colorspace;
-	format->code = info->fmt->mbus_code;
-	format->field = V4L2_FIELD_NONE;
-}
-
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-static int ov7670_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
-{
-	struct v4l2_mbus_framefmt *format =
-				v4l2_subdev_get_try_format(sd, fh->pad, 0);
-
-	ov7670_get_default_format(sd, format);
-
-	return 0;
-}
-#endif
-
-/* ----------------------------------------------------------------------- */
-
-static const struct v4l2_subdev_core_ops ov7670_core_ops = {
-	.reset = ov7670_reset,
-	.init = ov7670_init,
-	.s_power = ov7670_s_power,
-	.log_status = v4l2_ctrl_subdev_log_status,
-	.subscribe_event = v4l2_ctrl_subdev_subscribe_event,
-	.unsubscribe_event = v4l2_event_subdev_unsubscribe,
-#ifdef CONFIG_VIDEO_ADV_DEBUG
-	.g_register = ov7670_g_register,
-	.s_register = ov7670_s_register,
-#endif
-};
-
-static const struct v4l2_subdev_video_ops ov7670_video_ops = {
-	.s_frame_interval = ov7670_s_frame_interval,
-	.g_frame_interval = ov7670_g_frame_interval,
-};
-
-static const struct v4l2_subdev_pad_ops ov7670_pad_ops = {
-	.enum_frame_interval = ov7670_enum_frame_interval,
-	.enum_frame_size = ov7670_enum_frame_size,
-	.enum_mbus_code = ov7670_enum_mbus_code,
-	.get_fmt = ov7670_get_fmt,
-	.set_fmt = ov7670_set_fmt,
-};
-
-static const struct v4l2_subdev_ops ov7670_ops = {
-	.core = &ov7670_core_ops,
-	.video = &ov7670_video_ops,
-	.pad = &ov7670_pad_ops,
-};
-
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-static const struct v4l2_subdev_internal_ops ov7670_subdev_internal_ops = {
-	.open = ov7670_open,
-};
-#endif
-
-#endif
 
 /* ----------------------------------------------------------------------- */
 
@@ -2011,11 +1333,9 @@ static const struct ov7670_devtype ov7670_devdata[] = {
 	},
 };
 
-#ifdef ARDUINO
-
 void* ov7670_alloc()
 {
-	return calloc(sizeof(struct ov7670_info), sizeof(uint8_t));
+	return calloc(sizeof(struct ov7670_info), sizeof(u8));
 }
 
 void ov7670_free(void* p)
@@ -2036,265 +1356,3 @@ void ov7670_configure(struct v4l2_subdev *sd, int devtype, int format, int wsize
 	info->pll_bypass = pll_bypass;
 	info->pclk_hb_disable = pclk_hb_disable;
 }
-
-#else
-
-static int ov7670_init_gpio(struct i2c_client *client, struct ov7670_info *info)
-{
-	info->pwdn_gpio = devm_gpiod_get_optional(&client->dev, "powerdown",
-			GPIOD_OUT_LOW);
-	if (IS_ERR(info->pwdn_gpio)) {
-		dev_info(&client->dev, "can't get %s GPIO\n", "powerdown");
-		return PTR_ERR(info->pwdn_gpio);
-	}
-
-	info->resetb_gpio = devm_gpiod_get_optional(&client->dev, "reset",
-			GPIOD_OUT_LOW);
-	if (IS_ERR(info->resetb_gpio)) {
-		dev_info(&client->dev, "can't get %s GPIO\n", "reset");
-		return PTR_ERR(info->resetb_gpio);
-	}
-
-	usleep_range(3000, 5000);
-
-	return 0;
-}
-
-/*
- * ov7670_parse_dt() - Parse device tree to collect mbus configuration
- *			properties
- */
-static int ov7670_parse_dt(struct device *dev,
-			   struct ov7670_info *info)
-{
-	struct fwnode_handle *fwnode = dev_fwnode(dev);
-	struct v4l2_fwnode_endpoint bus_cfg = { .bus_type = 0 };
-	struct fwnode_handle *ep;
-	int ret;
-
-	if (!fwnode)
-		return -EINVAL;
-
-	info->pclk_hb_disable = false;
-	if (fwnode_property_present(fwnode, "ov7670,pclk-hb-disable"))
-		info->pclk_hb_disable = true;
-
-	ep = fwnode_graph_get_next_endpoint(fwnode, NULL);
-	if (!ep)
-		return -EINVAL;
-
-	ret = v4l2_fwnode_endpoint_parse(ep, &bus_cfg);
-	fwnode_handle_put(ep);
-	if (ret)
-		return ret;
-
-	if (bus_cfg.bus_type != V4L2_MBUS_PARALLEL) {
-		dev_err(dev, "Unsupported media bus type\n");
-		return ret;
-	}
-	info->mbus_config = bus_cfg.bus.parallel.flags;
-
-	return 0;
-}
-
-static int ov7670_probe(struct i2c_client *client,
-			const struct i2c_device_id *id)
-{
-	struct v4l2_fract tpf;
-	struct v4l2_subdev *sd;
-	struct ov7670_info *info;
-	int ret;
-
-	info = devm_kzalloc(&client->dev, sizeof(*info), GFP_KERNEL);
-	if (info == NULL)
-		return -ENOMEM;
-	sd = &info->sd;
-	v4l2_i2c_subdev_init(sd, client, &ov7670_ops);
-
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-	sd->internal_ops = &ov7670_subdev_internal_ops;
-	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE | V4L2_SUBDEV_FL_HAS_EVENTS;
-#endif
-
-	info->clock_speed = 30; /* default: a guess */
-
-	if (dev_fwnode(&client->dev)) {
-		ret = ov7670_parse_dt(&client->dev, info);
-		if (ret)
-			return ret;
-
-	} else if (client->dev.platform_data) {
-		struct ov7670_config *config = client->dev.platform_data;
-
-		/*
-		 * Must apply configuration before initializing device, because it
-		 * selects I/O method.
-		 */
-		info->min_width = config->min_width;
-		info->min_height = config->min_height;
-		info->use_smbus = config->use_smbus;
-
-		if (config->clock_speed)
-			info->clock_speed = config->clock_speed;
-
-		if (config->pll_bypass)
-			info->pll_bypass = true;
-
-		if (config->pclk_hb_disable)
-			info->pclk_hb_disable = true;
-	}
-
-	info->clk = devm_clk_get(&client->dev, "xclk"); /* optional */
-	if (IS_ERR(info->clk)) {
-		ret = PTR_ERR(info->clk);
-		if (ret == -ENOENT)
-			info->clk = NULL;
-		else
-			return ret;
-	}
-
-	ret = ov7670_init_gpio(client, info);
-	if (ret)
-		return ret;
-
-	ov7670_power_on(sd);
-
-	if (info->clk) {
-		info->clock_speed = clk_get_rate(info->clk) / 1000000;
-		if (info->clock_speed < 10 || info->clock_speed > 48) {
-			ret = -EINVAL;
-			goto power_off;
-		}
-	}
-
-	/* Make sure it's an ov7670 */
-	ret = ov7670_detect(sd);
-	if (ret) {
-		v4l_dbg(1, debug, client,
-			"chip found @ 0x%x (%s) is not an ov7670 chip.\n",
-			client->addr << 1, client->adapter->name);
-		goto power_off;
-	}
-	v4l_info(client, "chip found @ 0x%02x (%s)\n",
-			client->addr << 1, client->adapter->name);
-
-	info->devtype = &ov7670_devdata[id->driver_data];
-	info->fmt = &ov7670_formats[0];
-	info->wsize = &info->devtype->win_sizes[0];
-
-	ov7670_get_default_format(sd, &info->format);
-
-	info->clkrc = 0;
-
-	/* Set default frame rate to 30 fps */
-	tpf.numerator = 1;
-	tpf.denominator = 30;
-	info->devtype->set_framerate(sd, &tpf);
-
-	v4l2_ctrl_handler_init(&info->hdl, 10);
-	v4l2_ctrl_new_std(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_BRIGHTNESS, 0, 255, 1, 128);
-	v4l2_ctrl_new_std(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_CONTRAST, 0, 127, 1, 64);
-	v4l2_ctrl_new_std(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_VFLIP, 0, 1, 1, 0);
-	v4l2_ctrl_new_std(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_HFLIP, 0, 1, 1, 0);
-	info->saturation = v4l2_ctrl_new_std(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_SATURATION, 0, 256, 1, 128);
-	info->hue = v4l2_ctrl_new_std(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_HUE, -180, 180, 5, 0);
-	info->gain = v4l2_ctrl_new_std(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_GAIN, 0, 255, 1, 128);
-	info->auto_gain = v4l2_ctrl_new_std(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_AUTOGAIN, 0, 1, 1, 1);
-	info->exposure = v4l2_ctrl_new_std(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_EXPOSURE, 0, 65535, 1, 500);
-	info->auto_exposure = v4l2_ctrl_new_std_menu(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_EXPOSURE_AUTO, V4L2_EXPOSURE_MANUAL, 0,
-			V4L2_EXPOSURE_AUTO);
-	v4l2_ctrl_new_std_menu_items(&info->hdl, &ov7670_ctrl_ops,
-			V4L2_CID_TEST_PATTERN,
-			ARRAY_SIZE(ov7670_test_pattern_menu) - 1, 0, 0,
-			ov7670_test_pattern_menu);
-	sd->ctrl_handler = &info->hdl;
-	if (info->hdl.error) {
-		ret = info->hdl.error;
-
-		goto hdl_free;
-	}
-	/*
-	 * We have checked empirically that hw allows to read back the gain
-	 * value chosen by auto gain but that's not the case for auto exposure.
-	 */
-	v4l2_ctrl_auto_cluster(2, &info->auto_gain, 0, true);
-	v4l2_ctrl_auto_cluster(2, &info->auto_exposure,
-			       V4L2_EXPOSURE_MANUAL, false);
-	v4l2_ctrl_cluster(2, &info->saturation);
-
-#if defined(CONFIG_MEDIA_CONTROLLER)
-	info->pad.flags = MEDIA_PAD_FL_SOURCE;
-	info->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
-	ret = media_entity_pads_init(&info->sd.entity, 1, &info->pad);
-	if (ret < 0)
-		goto hdl_free;
-#endif
-
-	v4l2_ctrl_handler_setup(&info->hdl);
-
-	ret = v4l2_async_register_subdev(&info->sd);
-	if (ret < 0)
-		goto entity_cleanup;
-
-	ov7670_power_off(sd);
-	return 0;
-
-entity_cleanup:
-	media_entity_cleanup(&info->sd.entity);
-hdl_free:
-	v4l2_ctrl_handler_free(&info->hdl);
-power_off:
-	ov7670_power_off(sd);
-	return ret;
-}
-
-static int ov7670_remove(struct i2c_client *client)
-{
-	struct v4l2_subdev *sd = i2c_get_clientdata(client);
-	struct ov7670_info *info = to_state(sd);
-
-	v4l2_async_unregister_subdev(sd);
-	v4l2_ctrl_handler_free(&info->hdl);
-	media_entity_cleanup(&info->sd.entity);
-	ov7670_power_off(sd);
-	return 0;
-}
-
-static const struct i2c_device_id ov7670_id[] = {
-	{ "ov7670", MODEL_OV7670 },
-	{ "ov7675", MODEL_OV7675 },
-	{ }
-};
-MODULE_DEVICE_TABLE(i2c, ov7670_id);
-
-#if IS_ENABLED(CONFIG_OF)
-static const struct of_device_id ov7670_of_match[] = {
-	{ .compatible = "ovti,ov7670", },
-	{ /* sentinel */ },
-};
-MODULE_DEVICE_TABLE(of, ov7670_of_match);
-#endif
-
-static struct i2c_driver ov7670_driver = {
-	.driver = {
-		.name	= "ov7670",
-		.of_match_table = of_match_ptr(ov7670_of_match),
-	},
-	.probe		= ov7670_probe,
-	.remove		= ov7670_remove,
-	.id_table	= ov7670_id,
-};
-
-module_i2c_driver(ov7670_driver);
-
-#endif
