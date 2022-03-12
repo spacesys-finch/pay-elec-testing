@@ -9,6 +9,8 @@
 // #define OV760_DEBUG
 #endif
 
+extern I2C_HandleTypeDef hi2c1;
+
 extern "C" {
   void msleep(unsigned long ms)
   {
@@ -71,7 +73,7 @@ extern "C" {
     buf[0] = reg;
     buf[1] = value;
 
-    ret = HAL_I2C_Transmit(&hi2c1, address, buf, 2, HAL_MAX_DELAY);
+    ret = HAL_I2C_Master_Transmit(&hi2c1, address, buf, 2, HAL_MAX_DELAY);
 
     // if (Wire.endTransmission() != 0) {
     if(ret != HAL_OK){

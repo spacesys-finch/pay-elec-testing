@@ -44,17 +44,11 @@ extern "C" {
   int ov7670_s_test_pattern(void*, int value);
 };
 
-const int OV760_D[8] = {
-  OV7670_D0, OV7670_D1, OV7670_D2, OV7670_D3, OV7670_D4, OV7670_D5, OV7670_D6, OV7670_D7
-};
-
 OV767X::OV767X() :
   _ov7670(NULL),
   _saturation(128),
-  _hue(0)
-{
-  setPins(OV7670_VSYNC, OV7670_HREF, OV7670_PLK, OV7670_XCLK, OV760_D);
-}
+  _hue(0){}
+
 
 OV767X::~OV767X()
 {
@@ -124,27 +118,39 @@ int OV767X::begin(int resolution, int format, int fps)
     return 0;
   }
 
-  pinMode(_vsyncPin, INPUT);
-  pinMode(_hrefPin, INPUT);
-  pinMode(_pclkPin, INPUT);
-  pinMode(_xclkPin, OUTPUT);
+  // Configure GPIO pins
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-  for (int i = 0; i < 8; i++) {
-    pinMode(_dPins[i], INPUT);
-  }
+  // pixel input (D0-D7)
+  // __HAL_RCC_GPIOF_CLK_ENABLE();
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-  _vsyncPort = portInputRegister(digitalPinToPort(_vsyncPin));
-  _vsyncMask = digitalPinToBitMask(_vsyncPin);
-  _hrefPort = portInputRegister(digitalPinToPort(_hrefPin));
-  _hrefMask = digitalPinToBitMask(_hrefPin);
-  _pclkPort = portInputRegister(digitalPinToPort(_pclkPin));
-  _pclkMask = digitalPinToBitMask(_pclkPin);
+  // vsync
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  beginXClk();
+  // href
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  Wire.begin();
+  // pclk
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  delay(1000);
+  _vsyncMask = 2;
+  _hrefMask = 0;
+  _pclkMask = 3;
+
+  HAL_Delay(1000);
 
   if (ov7670_detect(_ov7670)) {
     end();
@@ -173,11 +179,12 @@ int OV767X::begin(int resolution, int format, int fps)
 
 void OV767X::end()
 {
-  endXClk();
-
-  pinMode(_xclkPin, INPUT);
-
-  Wire.end();
+	// turn off xclk
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = GPIO_PIN_9;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   if (_ov7670) {
     ov7670_free(_ov7670);
@@ -204,69 +211,38 @@ int OV767X::bytesPerPixel() const
   return _bytesPerPixel;
 }
 
-//
-// Optimized Data Reading Explanation:
-//
-// In order to keep up with the data rate of 5 FPS, the inner loop that reads
-// data from the camera board needs to be as quick as possible. The 64 Mhz ARM
-// Cortex-M4 in the Nano 33 would not be able to keep up if we read each bit
-// one at a time from the various GPIO pins and combined them into a byte.
-// Instead, we chose specific GPIO pins which all occupy a single GPIO "PORT"
-// In this case, P1 (The Nano 33 exposes some bits of P0 and some of P1).
-// The bits on P1 are not connected to sequential GPIO pins, so the order
-// chosen may look a bit odd. Below is a map showing the GPIO pin numbers
-// and the bit position they correspond with on P1 (bit 0 is on the right)
-//
-//    20-19-18-17-16-15-14-13-12-11-10-09-08-07-06-05-04-03-02-01-00  (bit)
-// ~ +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-// ~ |xx|xx|xx|xx|xx|04|06|05|03|02|01|xx|12|xx|xx|xx|xx|00|10|11|xx| (pin)
-// ~ +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-//
-// The most efficient way to read 8-bits of data with the arrangement above
-// is to wire the pins for P1 bits 2,3,10,11,12,13,14,15. This allows other
-// features such as SPI to still work and gives us 2 groups of contiguous
-// bits (0-1, 10-15). With 2 groups of bits, we can read, mask, shift and
-// OR them together to form an 8-bit byte with the minimum number of operations.
-//
 void OV767X::readFrame(void* buffer)
 {
-uint32_t ulPin = 33; // P1.xx set of GPIO is in 'pin' 32 and above
-NRF_GPIO_Type * port;
-
-  port = nrf_gpio_pin_port_decode(&ulPin);
-
-  noInterrupts();
+//  noInterrupts();
 
   uint8_t* b = (uint8_t*)buffer;
   int bytesPerRow = _width * _bytesPerPixel;
 
   // Falling edge indicates start of frame
-  while ((*_vsyncPort & _vsyncMask) == 0); // wait for HIGH
-  while ((*_vsyncPort & _vsyncMask) != 0); // wait for LOW
+  while ((VSYNC_PORT & _vsyncMask) == 0); // wait for HIGH
+  while ((VSYNC_PORT & _vsyncMask) != 0); // wait for LOW
 
   for (int i = 0; i < _height; i++) {
   // rising edge indicates start of line
-    while ((*_hrefPort & _hrefMask) == 0); // wait for HIGH
+    while ((HREF_PORT & _hrefMask) == 0); // wait for HIGH
 
     for (int j = 0; j < bytesPerRow; j++) {
       // rising edges clock each data byte
-      while ((*_pclkPort & _pclkMask) != 0); // wait for LOW
+      while ((PCLK_PORT & _pclkMask) != 0); // wait for LOW
 
-      uint32_t in = port->IN; // read all bits in parallel
+      uint32_t in = DPINS_PORT; // read all bits in parallel
 
-      in >>= 2; // place bits 0 and 1 at the "bottom" of the register
-      in &= 0x3f03; // isolate the 8 bits we care about
-      in |= (in >> 6); // combine the upper 6 and lower 2 bits
+      in &= 0xff; // isolate the 8 LSBs
 
       if (!(j & 1) || !_grayscale) {
         *b++ = in;
       }
-      while ((*_pclkPort & _pclkMask) == 0); // wait for HIGH
+      while ((PCLK_PORT & _pclkMask) == 0); // wait for HIGH
     }
-    while ((*_hrefPort & _hrefMask) != 0); // wait for LOW
+    while ((HREF_PORT & _hrefMask) != 0); // wait for LOW
   }
 
-  interrupts();
+  //interrupts();
 }
 
 void OV767X::testPattern(int pattern)
@@ -341,36 +317,6 @@ void OV767X::setExposure(int exposure)
 void OV767X::autoExposure()
 {
   ov7670_s_autoexp(_ov7670, 0 /* V4L2_EXPOSURE_AUTO */);
-}
-
-void OV767X::setPins(int vsync, int href, int pclk, int xclk, const int dpins[8])
-{
-  _vsyncPin = vsync;
-  _hrefPin = href;
-  _pclkPin = pclk;
-  _xclkPin = xclk;
-
-  memcpy(_dPins, dpins, sizeof(_dPins));
-}
-
-void OV767X::beginXClk()
-{
-  // Generates 16 MHz signal using I2S peripheral
-//  NRF_I2S->CONFIG.MCKEN = (I2S_CONFIG_MCKEN_MCKEN_ENABLE << I2S_CONFIG_MCKEN_MCKEN_Pos);
-//  NRF_I2S->CONFIG.MCKFREQ = I2S_CONFIG_MCKFREQ_MCKFREQ_32MDIV2  << I2S_CONFIG_MCKFREQ_MCKFREQ_Pos;
-//  NRF_I2S->CONFIG.MODE = I2S_CONFIG_MODE_MODE_MASTER << I2S_CONFIG_MODE_MODE_Pos;
-//
-//  NRF_I2S->PSEL.MCK = (digitalPinToPinName(_xclkPin) << I2S_PSEL_MCK_PIN_Pos);
-//
-//  NRF_I2S->ENABLE = 1;
-//  NRF_I2S->TASKS_START = 1;
-	// Generate 16 MHz signal using RCC system, output to MCO2
-
-}
-
-void OV767X::endXClk()
-{
-  //NRF_I2S->TASKS_STOP = 1;
 }
 
 OV767X Camera;

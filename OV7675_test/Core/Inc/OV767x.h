@@ -4,23 +4,31 @@
  * Copyright (c) 2020 Arduino SA. All rights reserved.
  */
 #include <stdint.h>
+#include "stm32h7xx_hal.h"
 
 #ifndef _OV767X_H_
 #define _OV767X_H_
 
+/*
+ * Pin assignments: OV7670 -> STM32
+* VSYNC PB2
+* HREF  PC0
+* PCLK   PA3
+* XCLK  PC9
+* D0    PF0
+* D1    PF1
+* D2    PF2
+* D3    PF3
+* D4    PF4
+* D5    PF5
+* D6    PF6
+* D7    PF7
+*/
 
-#define OV7670_VSYNC 8
-#define OV7670_HREF  A1
-#define OV7670_PLK   A0
-#define OV7670_XCLK  9
-#define OV7670_D0    10
-#define OV7670_D1    1
-#define OV7670_D2    0
-#define OV7670_D3    2
-#define OV7670_D4    3
-#define OV7670_D5    5
-#define OV7670_D6    6
-#define OV7670_D7    4
+#define VSYNC_PORT GPIOB->IDR
+#define HREF_PORT GPIOC->IDR
+#define PCLK_PORT GPIOA->IDR
+#define DPINS_PORT GPIOF->IDR
 
 enum
 {
@@ -73,20 +81,7 @@ public:
   void setExposure(int exposure); // 0 - 65535
   void autoExposure();
 
-  // must be called before Camera.begin()
-  void setPins(int vsync, int href, int pclk, int xclk, const int dpins[8]);
-
 private:
-  void beginXClk();
-  void endXClk();
-
-private:
-  int _vsyncPin;
-  int _hrefPin;
-  int _pclkPin;
-  int _xclkPin;
-  int _dPins[8];
-
   int _width;
   int _height;
   int _bytesPerPixel;
@@ -94,11 +89,11 @@ private:
 
   void* _ov7670;
 
-  volatile uint32_t* _vsyncPort;
+  // volatile uint32_t* _vsyncPort;
   uint32_t _vsyncMask;
-  volatile uint32_t* _hrefPort;
+  // volatile uint32_t* _hrefPort;
   uint32_t _hrefMask;
-  volatile uint32_t* _pclkPort;
+  // volatile uint32_t* _pclkPort;
   uint32_t _pclkMask;
 
   int _saturation;
