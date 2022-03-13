@@ -463,13 +463,13 @@ static struct regval_list ov7670_fmt_raw[] = {
 static int ov7670_read(struct v4l2_subdev *sd, unsigned char reg,
 		unsigned char *value)
 {
-	return arduino_i2c_read(OV7670_I2C_ADDR >> 1, reg, value);
+	return arduino_i2c_read(OV7670_I2C_ADDR, reg, value);
 }
 
 static int ov7670_write(struct v4l2_subdev *sd, unsigned char reg,
 		unsigned char value)
 {
-	int ret = arduino_i2c_write(OV7670_I2C_ADDR >> 1, reg, value);
+	int ret = arduino_i2c_write(OV7670_I2C_ADDR, reg, value);
 
 	if (reg == REG_COM7 && (value & COM7_RESET))
 		msleep(5);  /* Wait for reset to run */

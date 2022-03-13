@@ -129,7 +129,7 @@ int OV767X::begin(int resolution, int format, int fps)
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
   // vsync
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

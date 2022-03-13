@@ -13,7 +13,7 @@
  * Pin assignments: OV7670 -> STM32
 * VSYNC PB2
 * HREF  PC0
-* PCLK   PA3
+* PCLK  PA3
 * XCLK  PC9
 * D0    PF0
 * D1    PF1

@@ -4,9 +4,10 @@
  * Copyright (c) 2020 Arduino SA. All rights reserved.
  */
 #include "stm32h7xx_hal.h"
+#include <cstdio>
 
 #ifndef OV760_DEBUG
-// #define OV760_DEBUG
+#define OV760_DEBUG
 #endif
 
 extern I2C_HandleTypeDef hi2c1;
@@ -20,7 +21,7 @@ extern "C" {
   int arduino_i2c_read(unsigned short address, unsigned char reg, unsigned char *value)
   {
 #ifdef OV760_DEBUG
-    printf("stm32_i2c_read: address = %#08x, reg = %#08x", address, reg);
+    printf("stm32_i2c_read: address = %#06x, reg = %#06x", address, reg);
 #endif
     HAL_StatusTypeDef ret;
     uint8_t buf[1];
@@ -32,7 +33,7 @@ extern "C" {
     //if (Wire.endTransmission() != 0) {
       if ( ret != HAL_OK ) {
 #ifdef OV760_DEBUG
-    printf("\n");
+    printf("\r\n");
     //printf("Error Tx\r\n");
 #endif
       return -1;
@@ -42,7 +43,7 @@ extern "C" {
     //if (Wire.requestFrom(address, 1) != 1) {
       if (ret != HAL_OK){
 #ifdef OV760_DEBUG
-      printf("\n");
+      printf("\r\n");
 #endif
       return -1;
     }
@@ -51,7 +52,7 @@ extern "C" {
   *value = buf[0];
 
 #ifdef OV760_DEBUG
-    printf(", value = %#08x", *value);
+    printf(", value = %#06x\r\n", *value);
 #endif
 
     return 0;
@@ -60,7 +61,7 @@ extern "C" {
   int arduino_i2c_write(unsigned short address, unsigned char reg, unsigned char value)
   {
 #ifdef OV760_DEBUG
-    printf("stm32_i2c_write: address = %#08x, reg = %#08x, value = %#08x", address, reg, value);
+    printf("stm32_i2c_write: address = %#06x, reg = %#06x, value = %#06x\r\n", address, reg, value);
 #endif
 
 //    Wire.beginTransmission(address);
