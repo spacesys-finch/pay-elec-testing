@@ -23,7 +23,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdio.h"
+#include <OV767X.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -75,7 +76,7 @@ UART_HandleTypeDef huart3;
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
-
+unsigned short pixels[176 * 144]; // QCIF: 176x144 X 2 bytes per pixel (RGB565)
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -86,7 +87,14 @@ static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
-
+#ifdef __GNUC__
+/* With GCC, small printf (option LD Linker->Libraries->Small printf
+   set to 'Yes') calls __io_putchar() */
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#define GETCHAR_PROTOTYPE int __io_getchar()
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -101,7 +109,6 @@ static void MX_I2C1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -127,7 +134,34 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+  printf("OV7675 Test Pattern\n\n");
 
+    if (!Camera.begin(QCIF, RGB565, 1)) {
+      printf("Failed to initialize camera!\n");
+      while (1);
+    }
+
+    printf("Camera settings:\twidth = %d\theight = %d\tbits per pixel = %d\n", Camera.width(), Camera.height(),Camera.bitsPerPixel());
+
+    printf("Enabling test pattern mode\n\n");
+    Camera.testPattern();
+
+    printf("Reading frame\n");
+    Camera.readFrame(pixels);
+
+    int numPixels = Camera.width() * Camera.height();
+
+    for (int i = 0; i < numPixels; i++) {
+      unsigned short p = pixels[i];
+
+      if (p < 0x1000) printf("0");
+      if (p < 0x0100) printf("0");
+      if (p < 0x0010) printf("0");
+
+      printf("%#08x", p);
+    }
+
+    printf("\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -138,6 +172,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
   }
+  Camera.end();
   /* USER CODE END 3 */
 }
 
@@ -474,7 +509,28 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+/**
+  * @brief  Retargets the C library printf and scanf functions to the UART.
+  * @param  None
+  * @retval None
+  */
+PUTCHAR_PROTOTYPE
+{
+  /* Place your implementation of fputc here */
+  /* e.g. write a character to the USART3 and Loop until the end of transmission */
+  HAL_UART_Transmit(&huart3, (uint8_t *)&ch, 1, 0xFFFF);
 
+  return ch;
+}
+
+GETCHAR_PROTOTYPE
+{
+	uint8_t ch;
+
+	HAL_UART_Receive(&huart3, &ch, 1, 0xFFFF);
+
+	return ch;
+}
 /* USER CODE END 4 */
 
 /**
