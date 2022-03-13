@@ -24,7 +24,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
-#include <OV767X.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -76,7 +75,6 @@ UART_HandleTypeDef huart3;
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
-unsigned short pixels[176 * 144]; // QCIF: 176x144 X 2 bytes per pixel (RGB565)
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -134,34 +132,9 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  printf("OV7675 Test Pattern\n\n");
+  printf("OV7675 Test Pattern\r\n\n");
 
-    if (!Camera.begin(QCIF, RGB565, 1)) {
-      printf("Failed to initialize camera!\n");
-      while (1);
-    }
-
-    printf("Camera settings:\twidth = %d\theight = %d\tbits per pixel = %d\n", Camera.width(), Camera.height(),Camera.bitsPerPixel());
-
-    printf("Enabling test pattern mode\n\n");
-    Camera.testPattern();
-
-    printf("Reading frame\n");
-    Camera.readFrame(pixels);
-
-    int numPixels = Camera.width() * Camera.height();
-
-    for (int i = 0; i < numPixels; i++) {
-      unsigned short p = pixels[i];
-
-      if (p < 0x1000) printf("0");
-      if (p < 0x0100) printf("0");
-      if (p < 0x0010) printf("0");
-
-      printf("%#08x", p);
-    }
-
-    printf("\n");
+  my_main();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -172,7 +145,6 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
   }
-  Camera.end();
   /* USER CODE END 3 */
 }
 
