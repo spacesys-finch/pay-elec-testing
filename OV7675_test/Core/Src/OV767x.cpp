@@ -7,15 +7,6 @@
 
 #include "OV767X.h"
 
-// if not defined in the variant
-//#ifndef digitalPinToBitMask
-//#define digitalPinToBitMask(P) (1 << (digitalPinToPinName(P) % 32))
-//#endif
-//
-//#ifndef portInputRegister
-//#define portInputRegister(P) ((P == 0) ? &NRF_P0->IN : &NRF_P1->IN)
-//#endif
-
 extern "C" {
   // defined in utility/ov7670.c:
   struct ov7670_fract {
@@ -108,8 +99,8 @@ int OV767X::begin(int resolution, int format, int fps)
   }
 
 // The only frame rates which work on the Nano 33 BLE are 1 and 5 FPS
-  if (fps != 1 && fps != 5)
-    return 0;
+ // if (fps != 1 && fps != 5)
+    //return 0;
 
   _ov7670 = ov7670_alloc();
   if (!_ov7670) {
@@ -146,9 +137,9 @@ int OV767X::begin(int resolution, int format, int fps)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  _vsyncMask = 2;
-  _hrefMask = 0;
-  _pclkMask = 3;
+  _vsyncMask = 1<<2;
+  _hrefMask = 1<<0;
+  _pclkMask = 1<<3;
 
   HAL_Delay(1000);
 
@@ -213,7 +204,7 @@ int OV767X::bytesPerPixel() const
 
 void OV767X::readFrame(void* buffer)
 {
-//  noInterrupts();
+	__disable_irq();
 
   uint8_t* b = (uint8_t*)buffer;
   int bytesPerRow = _width * _bytesPerPixel;
@@ -242,7 +233,7 @@ void OV767X::readFrame(void* buffer)
     while ((HREF_PORT & _hrefMask) != 0); // wait for LOW
   }
 
-  //interrupts();
+  __enable_irq();
 }
 
 void OV767X::testPattern(int pattern)

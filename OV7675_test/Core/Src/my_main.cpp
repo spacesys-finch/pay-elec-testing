@@ -1,12 +1,15 @@
 #include <OV767X.h>
-#include <cstdio>
-
-unsigned short pixels[176 * 144]; // QCIF: 176x144 X 2 bytes per pixel (RGB565)
 
 extern "C"{
-void my_main(){
+	#include <stdio.h>
+}
 
-	    if (!Camera.begin(QCIF, RGB565, 1)) {
+unsigned short pixels[320 * 240]; // VGA: 640x480 X 2 bytes per pixel (RGB565)
+
+extern "C" void my_main(){
+
+	printf("Sizeof of u short %d\n", sizeof(short));
+	    if (!Camera.begin(QVGA, RGB565, 60)) {
 	      printf("Failed to initialize camera!\r\n");
 	      while (1);
 	    }
@@ -14,26 +17,29 @@ void my_main(){
 	    printf("Camera settings:\twidth = %d\theight = %d\tbits per pixel = %d\r\n",
 	    		Camera.width(), Camera.height(), Camera.bitsPerPixel());
 
-	    printf("Enabling test pattern mode\r\n\n");
-	    Camera.testPattern();
+	   // printf("Enabling test pattern mode\r\n\n");
+	    // Camera.testPattern(1);
 
-	    printf("Reading frame\r\n");
-	    Camera.readFrame(pixels);
+	    while(true){
+			printf("Reading frame\r\n");
+			Camera.readFrame(pixels);
 
-	    int numPixels = Camera.width() * Camera.height();
+			int numPixels = Camera.width() * Camera.height();
 
-	    for (int i = 0; i < numPixels; i++) {
-	      unsigned short p = pixels[i];
+			for (int i = 0; i < numPixels; i++) {
+			  unsigned short p = pixels[i];
 
-	      if (p < 0x1000) printf("0");
-	      if (p < 0x0100) printf("0");
-	      if (p < 0x0010) printf("0");
+			  if (p < 0x1000) printf("0");
+			  if (p < 0x0100) printf("0");
+			  if (p < 0x0010) printf("0");
 
-	      printf("%#08x", p);
+			  printf("%#08x", p);
+			}
+
+			printf("\r\n");
+			HAL_Delay(1000);
 	    }
 
-	    printf("\r\n");
+
 	    Camera.end();
 }
-
-};

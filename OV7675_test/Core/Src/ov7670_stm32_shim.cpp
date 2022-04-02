@@ -7,7 +7,9 @@
 #include <cstdio>
 
 #ifndef OV760_DEBUG
-#define OV760_DEBUG
+//#define OV760_DEBUG
+#else
+#undef OV7670_DEBUG
 #endif
 
 extern I2C_HandleTypeDef hi2c1;
@@ -34,7 +36,6 @@ extern "C" {
       if ( ret != HAL_OK ) {
 #ifdef OV760_DEBUG
     printf("\r\n");
-    //printf("Error Tx\r\n");
 #endif
       return -1;
     }
