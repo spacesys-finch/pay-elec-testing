@@ -11,7 +11,7 @@
 
 /*
  * Pin assignments: OV7670 -> STM32
-* VSYNC PB2
+* VSYNC PD15 (changed from PB2)
 * HREF  PC0
 * PCLK  PA3
 * XCLK  PC9
@@ -25,7 +25,7 @@
 * D7    PF7
 */
 
-#define VSYNC_PORT GPIOB->IDR
+#define VSYNC_PORT GPIOD->IDR
 #define HREF_PORT GPIOC->IDR
 #define PCLK_PORT GPIOA->IDR
 #define DPINS_PORT GPIOF->IDR
@@ -41,10 +41,11 @@ enum
 
 enum
 {
+	// supports VGA, QVGA, QQVGA
   VGA = 0,  // 640x480
-  CIF = 1,  // 352x240
+  //CIF = 1,  // 352x240
   QVGA = 2, // 320x240
-  QCIF = 3,  // 176x144
+  //QCIF = 3,  // 176x144
   QQVGA = 4,  // 160x120
 };
 

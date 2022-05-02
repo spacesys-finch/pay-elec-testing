@@ -56,20 +56,20 @@ int OV767X::begin(int resolution, int format, int fps)
       _height = 480;
       break;
 
-    case CIF:
-      _width = 352;
-      _height = 240;
-      break;
+//    case CIF:
+//      _width = 352;
+//      _height = 240;
+//      break;
 
     case QVGA:
       _width = 320;
       _height = 240;
       break;
 
-    case QCIF:
-      _width = 176;
-      _height = 144;
-      break;
+//    case QCIF:
+//      _width = 176;
+//      _height = 144;
+//      break;
 
     case QQVGA:
       _width = 160;
@@ -120,10 +120,10 @@ int OV767X::begin(int resolution, int format, int fps)
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
   // vsync
-  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Pin = GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   // href
   GPIO_InitStruct.Pin = GPIO_PIN_0;
@@ -137,7 +137,7 @@ int OV767X::begin(int resolution, int format, int fps)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  _vsyncMask = 1<<2;
+  _vsyncMask = 1<<15;
   _hrefMask = 1<<0;
   _pclkMask = 1<<3;
 
@@ -210,6 +210,7 @@ void OV767X::readFrame(void* buffer)
   int bytesPerRow = _width * _bytesPerPixel;
 
   // Falling edge indicates start of frame
+
   while ((VSYNC_PORT & _vsyncMask) == 0); // wait for HIGH
   while ((VSYNC_PORT & _vsyncMask) != 0); // wait for LOW
 
