@@ -1,7 +1,7 @@
 Pay-Elec Testing
 ================
 
-A temporary repository for quick and dirty sharing of code. The git repo is intialized in the workspace directory of the STM32CubeIDE. But we are only committing key files that have changed.
+A temporary repository for quick and dirty sharing of code. The git repo is initialized in the workspace directory of the STM32CubeIDE. But we are only committing key files that have changed.
 
 
 This is an example folder structure of the entire STM32CubeIDE project. We are only committing the following key files
