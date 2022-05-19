@@ -12,3 +12,6 @@ OV7675_test/Core/*
 !*.cpp
 !*.h
 !*.ioc
+/Drivers/CMSIS/Lib/
+!/Drivers/CMSIS/Lib/GCC
+
