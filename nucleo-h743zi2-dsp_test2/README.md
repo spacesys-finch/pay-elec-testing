@@ -1,19 +1,10 @@
-Pay-Elec Testing
-================
-
-A temporary repository for quick and dirty sharing of code. The git repo is initialized in the workspace directory of the STM32CubeIDE. But we are only committing key files that have changed.
-
-
-This is an example folder structure of the entire STM32CubeIDE project. We are only committing the following key files
-
-
 Using STM32 DSP Core
---------------------
+====================
 There are included ARM libraries provided as part of STM32 DSP that can accelerate matrix operations
 Based on CMSIS
 The Common Microcontroller Software Interface Standard (CMSIS) is a vendor-independent abstraction layer for microcontrollers that are based on Arm Cortex processors.
 CMSIS source files are included in the FW package
-C:\Users\yongd\STM32Cube\Repository\STM32Cube_FW_H7_V1.10.0\Drivers\CMSIS\DSP
+- C:\Users\yongd\STM32Cube\Repository\STM32Cube_FW_H7_V1.10.0\Drivers\CMSIS\DSP
 
 This is the contents of the `DSP` folder.
 ```
@@ -110,11 +101,3 @@ Printing floats
 
 19 directories
 ```
-
-Key Files
----------
-1. .ioc file = project setup and pin configuration. Used by the STM32CubeMX code generator.
-2. core/Inc/* = all header files
-3. core/Src/* = all source files
-
-All the other stuff is generic and can be generated on the fly by the STM32CubeIDE itself. So it's redundant to upload it to GitHub.
