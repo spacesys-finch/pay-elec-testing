@@ -1,17 +1,9 @@
-/*
-!/OV7675_test
-!/bitbanging-i2c
-OV7675_test/*
-!OV7675_test/Core
-OV7675_test/Core/*
-!OV7675_test/Core/Src
-!OV7675_test/Core/Inc
-!.gitignore
-!*.md
-!*.c
-!*.cpp
-!*.h
-!*.ioc
-/Drivers/CMSIS/Lib/
-!/Drivers/CMSIS/Lib/GCC
-
+# Yong Da Li
+# 02 July 2022
+# 
+# restructuring the pay-elec testing repo for STM32 development
+# just upload all files for now
+# we can start having .gitignores and includes when we have a better workflow
+# 
+# I'm worried about accidentally not committing some file that's important for configuration
+# 	ex. STM32 autogen code doesn't work properly and you get weird behaviour 
