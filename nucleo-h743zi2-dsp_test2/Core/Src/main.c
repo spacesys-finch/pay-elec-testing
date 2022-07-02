@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "arm_math.h"
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -144,6 +145,8 @@ int main(void)
 
 	  arm_dot_prod_f32(vectorA, vectorB, blockSize, &result);
 
+	  pretty_print_float32_vector(vectorA, blockSize);
+	  pretty_print_float32_vector(vectorB, blockSize);
 	  printf("result: %.1f\n", result);
 
     /* USER CODE END WHILE */
@@ -151,6 +154,18 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+/**
+ * print out vector over UART
+ */
+void pretty_print_float32_vector(float32_t *vec, uint32_t size){
+	printf("vector: ");
+	uint32_t i;
+	for (i=0; i<size; i++){
+		printf("%.1f, ", vec[i]);
+	}
+	printf("\n");
 }
 
 /**

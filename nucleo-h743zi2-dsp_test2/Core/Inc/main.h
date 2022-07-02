@@ -31,6 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "arm_math.h"
 
 /* USER CODE END Includes */
 
@@ -53,6 +54,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+void pretty_print_float32_vector(float32_t *vec, uint32_t size);
 
 /* USER CODE END EFP */
 
