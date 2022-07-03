@@ -15,6 +15,7 @@
 .map
 .d
 .su
+.mk
 
 # from laptop_benchmark
 .out
