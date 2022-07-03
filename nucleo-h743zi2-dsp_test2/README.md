@@ -14,8 +14,8 @@ Benchmark
     - elem  values between 0.00 - 0.99
 
 #### on STM32H743ZI2 nucleo devkit
-- Note that it's the RNG process that's actually taking up most of the compute time
-- takes about 25s (manually counted) for the MCU to do this computation 100x
+- Note RNG value only generated 1x on startup, then we're computing the same dot product many times
+- takes about 24-25s (manually counted) for the MCU to do this computation 1000x
 
 #### Yong Da's laptop
 - running in WSL2

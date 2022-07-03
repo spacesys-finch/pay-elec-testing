@@ -148,6 +148,8 @@ int main(void)
 
   uint32_t count = 0;
 
+  fill_vector_with_rng(vectorA, RNG_TEST_SIZE);
+  fill_vector_with_rng(vectorB, RNG_TEST_SIZE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -156,8 +158,6 @@ int main(void)
   {
 	  // HAL_Delay(500);
 
-	  fill_vector_with_rng(vectorA, RNG_TEST_SIZE);
-	  fill_vector_with_rng(vectorB, RNG_TEST_SIZE);
 	  arm_dot_prod_f32(vectorA, vectorB, RNG_TEST_SIZE, &result);
 
 	  printf("count=%3d, result: %.3f\n", count, result);

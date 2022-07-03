@@ -66,10 +66,12 @@ int main(void){
 	// just check that it's 32 bits long for equal comparison
 	printf("floats are %2d bits long\n", 8*(int)sizeof(float));
 
-	// stop at 100, for MCU comparison
-	while(count<100){
-		fill_with_rng(vectorA, RNG_TEST_SIZE);
-		fill_with_rng(vectorB, RNG_TEST_SIZE);
+	// fill with RNG only 1x at startup
+	fill_with_rng(vectorA, RNG_TEST_SIZE);
+	fill_with_rng(vectorB, RNG_TEST_SIZE);
+
+	// stop at N, for MCU comparison
+	while(count<1000){
 
 		software_dot_product(vectorA, vectorB, RNG_TEST_SIZE, &result);
 		printf("count=%3d, result: %.3f\n", count, result);
