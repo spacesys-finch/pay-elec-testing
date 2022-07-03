@@ -12,10 +12,11 @@ Benchmark
     - size  50,000 elements
     - type  float_32
     - elem  values between 0.00 - 0.99
+    - compute dot product 1000x
 
 #### on STM32H743ZI2 nucleo devkit
 - Note RNG value only generated 1x on startup, then we're computing the same dot product many times
-- takes about 24-25s (manually counted) for the MCU to do this computation 1000x
+- takes about 24-25s (manually counted) for the MCU to do this
 
 #### Yong Da's laptop
 - running in WSL2
