@@ -18,12 +18,14 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "arm_math.h"
 #include <stdio.h>
+#include "string.h"
+#include <time.h>	// seeding pseudo RNG
+#include <stdlib.h>	// for rng
 
 /* USER CODE END Includes */
 
@@ -125,14 +127,26 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   /* try out ARM dot product */
-  float32_t vectorA [] = {1,2,3};
-  float32_t vectorB [] = {1,2,3};
-  uint32_t blockSize = 3;
+  // float32_t vectorA [] = {1,2,3};
+  // float32_t vectorB [] = {1,2,3};
+  // uint32_t blockSize = 3;
   float32_t result = 999;
 
+  // seed random number
+  srand(time(NULL));
+
+  uint32_t RNG_TEST_SIZE = 50000;
+  float32_t vectorA [RNG_TEST_SIZE];
+  float32_t vectorB [RNG_TEST_SIZE];
+
+  // pretty_print_float32_vector(vectorA, RNG_TEST_SIZE);
+  // pretty_print_float32_vector(vectorB, RNG_TEST_SIZE);
 
   // uart buffer stuff
   printf("initial result: %f\n", result);
+  printf("hello world\n");
+
+  uint32_t count = 0;
 
   /* USER CODE END 2 */
 
@@ -140,14 +154,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  printf("hello world\n");
-	  HAL_Delay(500);
+	  // HAL_Delay(500);
 
-	  arm_dot_prod_f32(vectorA, vectorB, blockSize, &result);
+	  fill_vector_with_rng(vectorA, RNG_TEST_SIZE);
+	  fill_vector_with_rng(vectorB, RNG_TEST_SIZE);
+	  arm_dot_prod_f32(vectorA, vectorB, RNG_TEST_SIZE, &result);
 
-	  pretty_print_float32_vector(vectorA, blockSize);
-	  pretty_print_float32_vector(vectorB, blockSize);
-	  printf("result: %.1f\n", result);
+	  printf("count=%3d, result: %.3f\n", count, result);
+	  count++;
+	  // printf("random number: %3d\n", r);
+	  // r = (uint32_t) rand();
 
     /* USER CODE END WHILE */
 
@@ -163,9 +179,19 @@ void pretty_print_float32_vector(float32_t *vec, uint32_t size){
 	printf("vector: ");
 	uint32_t i;
 	for (i=0; i<size; i++){
-		printf("%.1f, ", vec[i]);
+		printf("%.2f, ", vec[i]);
 	}
 	printf("\n");
+}
+
+/**
+ * fill with numbers from 0.00 to 0.99
+ */
+void fill_vector_with_rng (float32_t *vec, uint32_t size){
+	  uint32_t i = 0;
+	  for (i=0; i<size; i++){
+		  vec[i] = (float32_t)(rand()%100) / 100; // decimals with 2 significant figures, from 0 - 0.99
+	  }
 }
 
 /**

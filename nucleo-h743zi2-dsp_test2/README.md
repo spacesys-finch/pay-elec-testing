@@ -1,5 +1,25 @@
 Using STM32 DSP Core
 ====================
+
+Benchmark
+---------
+
+### Saturday, July 2, 2022, Yong Da
+- I have a vector\*vector dot product speed test working on the MCU using the arm_math.h and hardware accelerated functions
+ 
+- parameters:
+    - generate 2 vectors
+    - size  50,000 elements
+    - type  float_32
+    - elem  values between 0.00 - 0.99
+
+- Note that it's the RNG process that's actually taking up most of the compute time
+- takes about 25s (manually counted) for the MCU to do this computation 100x
+
+- laptop_benchmark.c takes about 0.085s to do the same thing.... ripppp
+
+Setup
+-----
 There are included ARM libraries provided as part of STM32 DSP that can accelerate matrix operations
 Based on CMSIS
 The Common Microcontroller Software Interface Standard (CMSIS) is a vendor-independent abstraction layer for microcontrollers that are based on Arm Cortex processors.

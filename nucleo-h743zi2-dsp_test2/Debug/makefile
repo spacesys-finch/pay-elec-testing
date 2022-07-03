@@ -60,8 +60,8 @@ all: main-build
 main-build: nucleo-h743zi2-dsp_test2.elf secondary-outputs
 
 # Tool invocations
-nucleo-h743zi2-dsp_test2.elf nucleo-h743zi2-dsp_test2.map: $(OBJS) $(USER_OBJS) C:\Users\yongd\STM32CubeIDE\workspace_1.9.0\nucleo-h743zi2-dsp_test2\STM32H743ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "nucleo-h743zi2-dsp_test2.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\yongd\STM32CubeIDE\workspace_1.9.0\nucleo-h743zi2-dsp_test2\STM32H743ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="nucleo-h743zi2-dsp_test2.map" -Wl,--gc-sections -static -L"C:\Users\yongd\STM32CubeIDE\workspace_1.9.0\nucleo-h743zi2-dsp_test2\Drivers\CMSIS\Lib\GCC" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+nucleo-h743zi2-dsp_test2.elf nucleo-h743zi2-dsp_test2.map: $(OBJS) $(USER_OBJS) C:\Users\yongd\Documents\GitHub\UTAT_Space\pay-elec\pay-elec-testing\nucleo-h743zi2-dsp_test2\STM32H743ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "nucleo-h743zi2-dsp_test2.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\yongd\Documents\GitHub\UTAT_Space\pay-elec\pay-elec-testing\nucleo-h743zi2-dsp_test2\STM32H743ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="nucleo-h743zi2-dsp_test2.map" -Wl,--gc-sections -static -L"C:\Users\yongd\Documents\GitHub\UTAT_Space\pay-elec\pay-elec-testing\nucleo-h743zi2-dsp_test2\Drivers\CMSIS\Lib\GCC" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

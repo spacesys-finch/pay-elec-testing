@@ -55,6 +55,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 void pretty_print_float32_vector(float32_t *vec, uint32_t size);
+void fill_vector_with_rng (float32_t *vec, uint32_t size);
 
 /* USER CODE END EFP */
 

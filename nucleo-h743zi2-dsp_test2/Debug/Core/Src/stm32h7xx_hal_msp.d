@@ -34,7 +34,7 @@ Core/Src/stm32h7xx_hal_msp.o: ../Core/Src/stm32h7xx_hal_msp.c \
  ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pcd.h \
  ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_ll_usb.h \
  ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pcd_ex.h \
- C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-dsp_test2/Drivers/CMSIS/DSP/Include/arm_math.h \
+ C:/Users/yongd/Documents/GitHub/UTAT_Space/pay-elec/pay-elec-testing/nucleo-h743zi2-dsp_test2/Drivers/CMSIS/DSP/Include/arm_math.h \
  ../Drivers/CMSIS/Include/cmsis_compiler.h
 ../Core/Inc/main.h:
 ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h:
@@ -72,5 +72,5 @@ Core/Src/stm32h7xx_hal_msp.o: ../Core/Src/stm32h7xx_hal_msp.c \
 ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pcd.h:
 ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_ll_usb.h:
 ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pcd_ex.h:
-C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-dsp_test2/Drivers/CMSIS/DSP/Include/arm_math.h:
+C:/Users/yongd/Documents/GitHub/UTAT_Space/pay-elec/pay-elec-testing/nucleo-h743zi2-dsp_test2/Drivers/CMSIS/DSP/Include/arm_math.h:
 ../Drivers/CMSIS/Include/cmsis_compiler.h:
