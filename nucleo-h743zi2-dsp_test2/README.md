@@ -19,7 +19,7 @@ Benchmark
 
 #### Yong Da's laptop
 - running in WSL2
-- laptop_benchmark.c takes about 0.085s to do the same thing.... ripppp
+- laptop_benchmark.c takes about 0.160-180s to do the same thing.... ripppp
 
 ```
             .-/+oossssoo+/-.               yongda@YDL-Zenbook14
