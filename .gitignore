@@ -9,13 +9,13 @@
 # 	ex. STM32 autogen code doesn't work properly and you get weird behaviour 
 
 # build files from STM32 compile
-.o
-.elf
-.list
-.map
-.d
-.su
-.mk
+*.o
+*.elf
+*.list
+*.map
+*.d
+*.su
+*.mk
 
 # from laptop_benchmark
-.out
+*.out
