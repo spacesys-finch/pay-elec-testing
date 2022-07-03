@@ -13,13 +13,68 @@ Benchmark
     - type  float_32
     - elem  values between 0.00 - 0.99
 
+#### on STM32H743ZI2 nucleo devkit
 - Note that it's the RNG process that's actually taking up most of the compute time
 - takes about 25s (manually counted) for the MCU to do this computation 100x
 
+#### Yong Da's laptop
+- running in WSL2
 - laptop_benchmark.c takes about 0.085s to do the same thing.... ripppp
 
-Setup
------
+```
+            .-/+oossssoo+/-.               yongda@YDL-Zenbook14
+        `:+ssssssssssssssssss+:`           --------------------
+      -+ssssssssssssssssssyyssss+-         OS: Ubuntu 20.04.4 LTS on Windows 10 x86_64
+    .ossssssssssssssssssdMMMNysssso.       Kernel: 5.10.102.1-microsoft-standard-WSL2
+   /ssssssssssshdmmNNmmyNMMMMhssssss/      Uptime: 12 hours, 32 mins
+  +ssssssssshmydMMMMMMMNddddyssssssss+     Packages: 1017 (dpkg)
+ /sssssssshNMMMyhhyyyyhmNMMMNhssssssss/    Shell: bash 5.0.17
+.ssssssssdMMMNhsssssssssshNMMMdssssssss.   Theme: Adwaita [GTK3]
++sssshhhyNMMNyssssssssssssyNMMMysssssss+   Icons: Adwaita [GTK3]
+ossyNMMMNyMMhsssssssssssssshmmmhssssssso   Terminal: /dev/pts/1
+ossyNMMMNyMMhsssssssssssssshmmmhssssssso   CPU: AMD Ryzen 7 4700U with Radeon Graphics (8) @ 1.996GHz
++sssshhhyNMMNyssssssssssssyNMMMysssssss+   GPU: 3f28:00:00.0 Microsoft Corporation Device 008e
+.ssssssssdMMMNhsssssssssshNMMMdssssssss.   Memory: 275MiB / 7657MiB
+ /sssssssshNMMMyhhyyyyhdNMMMNhssssssss/
+  +sssssssssdmydMMMMMMMMddddyssssssss+
+   /ssssssssssshdmNNNNmyNMMMMhssssss/
+    .ossssssssssssssssssdMMMNysssso.
+      -+sssssssssssssssssyyyssss+-
+        `:+ssssssssssssssssss+:`
+            .-/+oossssoo+/-.
+
+```
+
+#### running on UTAT-CAD machine
+- also in WSL2
+- takes either like \~0.085s or \~0.120s to run
+
+```
+            .-/+oossssoo+/-.               spacesys@UTAT-CAD
+        `:+ssssssssssssssssss+:`           -----------------
+      -+ssssssssssssssssssyyssss+-         OS: Ubuntu 20.04.4 LTS on Windows 10 x86_64
+    .ossssssssssssssssssdMMMNysssso.       Kernel: 4.4.0-20348-Microsoft
+   /ssssssssssshdmmNNmmyNMMMMhssssss/      Uptime: 8 mins
+  +ssssssssshmydMMMMMMMNddddyssssssss+     Packages: 715 (dpkg)
+ /sssssssshNMMMyhhyyyyhmNMMMNhssssssss/    Shell: bash 5.0.17
+.ssssssssdMMMNhsssssssssshNMMMdssssssss.   Terminal: /dev/tty1
++sssshhhyNMMNyssssssssssssyNMMMysssssss+   CPU: Intel i7-9700K (8) @ 3.601GHz
+ossyNMMMNyMMhsssssssssssssshmmmhssssssso   Memory: 8912MiB / 32687MiB
+ossyNMMMNyMMhsssssssssssssshmmmhssssssso
++sssshhhyNMMNyssssssssssssyNMMMysssssss+
+.ssssssssdMMMNhsssssssssshNMMMdssssssss.
+ /sssssssshNMMMyhhyyyyhdNMMMNhssssssss/
+  +sssssssssdmydMMMMMMMMddddyssssssss+
+   /ssssssssssshdmNNNNmyNMMMMhssssss/
+    .ossssssssssssssssssdMMMNysssso.
+      -+sssssssssssssssssyyyssss+-
+        `:+ssssssssssssssssss+:`
+            .-/+oossssoo+/-.
+```
+
+
+Overview
+--------
 There are included ARM libraries provided as part of STM32 DSP that can accelerate matrix operations
 Based on CMSIS
 The Common Microcontroller Software Interface Standard (CMSIS) is a vendor-independent abstraction layer for microcontrollers that are based on Arm Cortex processors.
@@ -94,30 +149,3 @@ Printing floats
 - need to enable "Use float with printf..." from project properties > C/C++ build > settings > MCU settings.
 - `printf("result: %.1f\n", result);`
 - output: `result: 14.0`
-
-
-
-```
-.
-├── Core
-│   ├── Inc
-│   ├── Src
-│   └── Startup
-├── Debug
-│   ├── Core
-│   │   ├── Src
-│   │   └── Startup
-│   └── Drivers
-│       └── STM32H7xx_HAL_Driver
-└── Drivers
-    ├── CMSIS
-    │   ├── DSP
-    │   ├── Device
-    │   ├── Include
-    │   └── Lib
-    └── STM32H7xx_HAL_Driver
-        ├── Inc
-        └── Src
-
-19 directories
-```
