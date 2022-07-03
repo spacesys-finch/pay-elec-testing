@@ -18,6 +18,9 @@ Benchmark
 - Note RNG value only generated 1x on startup, then we're computing the same dot product many times
 - takes about 24-25s (manually counted) for the MCU to do this
 
+- I tried doing a pure software implementation of the same dot product function. It takes about 50s to do the same thing.
+- so the `arm_dot_prod_f32()` ARM CMSIS math function is indeed doing something. It's about 2x speedup over what you could do normally
+
 #### Yong Da's laptop
 - running in WSL2
 - laptop_benchmark.c takes about 0.160-180s to do the same thing.... ripppp

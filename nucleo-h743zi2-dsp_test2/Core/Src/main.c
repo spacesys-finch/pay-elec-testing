@@ -159,8 +159,9 @@ int main(void)
 	  // HAL_Delay(500);
 
 	  arm_dot_prod_f32(vectorA, vectorB, RNG_TEST_SIZE, &result);
+	  // software_dot_prod_f32(vectorA, vectorB, RNG_TEST_SIZE, &result);
 
-	  printf("count=%3d, result: %.3f\n", count, result);
+	  printf("count=%3ld, result: %.3f\n", count, result);
 	  count++;
 	  // printf("random number: %3d\n", r);
 	  // r = (uint32_t) rand();
@@ -171,6 +172,22 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
+
+/**
+ * pure software version of the float32 dot product
+ * seeing if the arm_dot_prod_f32 is actually faster
+ */
+void software_dot_prod_f32(float32_t *vecA, float32_t *vecB, uint32_t size, float32_t *result){
+	// clear result
+	*result = 0;
+
+	uint32_t i;
+	for (i=0; i<size; i++){
+		*result = *result + vecA[i] * vecB[i];
+	}
+}
+
+
 
 /**
  * print out vector over UART

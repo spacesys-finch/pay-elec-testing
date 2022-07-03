@@ -32,6 +32,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "arm_math.h"
+#include <stdlib.h>
 
 /* USER CODE END Includes */
 
@@ -56,6 +57,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void pretty_print_float32_vector(float32_t *vec, uint32_t size);
 void fill_vector_with_rng (float32_t *vec, uint32_t size);
+void software_dot_prod_f32(float32_t *vecA, float32_t *vecB, uint32_t size, float32_t *result);
 
 /* USER CODE END EFP */
 
