@@ -65,6 +65,8 @@ ETH_TxPacketConfig TxConfig;
 
 ETH_HandleTypeDef heth;
 
+TIM_HandleTypeDef htim16;
+
 UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
@@ -81,6 +83,7 @@ static void MX_GPIO_Init(void);
 static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
+static void MX_TIM16_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -95,6 +98,7 @@ gpio_t user_led_red;
 gpio_t user_button;
 uint8_t is_changed = 0;
 uint8_t state = 0;
+uint32_t counter_tick = 0;
 
 /**
  * delay for `duration` miliseconds
@@ -113,20 +117,22 @@ void check_button(){
 	}
 }
 
-void my_delay(uint32_t duration){
-	uint32_t start = HAL_GetTick();
-	while (HAL_GetTick() - start < duration){
-		check_button();
-		if (is_changed){
-			return;
-		}
-	}
-}
-
+/*
+ * turn all user LEDs off
+ */
 void turn_all_off(){
 	HAL_GPIO_WritePin(user_led_green.bank, 	user_led_green.pin, 	GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(user_led_yellow.bank, user_led_yellow.pin, 	GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(user_led_red.bank, 	user_led_red.pin, 		GPIO_PIN_RESET);
+}
+
+/*
+ * turn all user LEDs on
+ */
+void turn_all_on(){
+	HAL_GPIO_WritePin(user_led_green.bank, 	user_led_green.pin, 	GPIO_PIN_SET);
+	HAL_GPIO_WritePin(user_led_yellow.bank, user_led_yellow.pin, 	GPIO_PIN_SET);
+	HAL_GPIO_WritePin(user_led_red.bank, 	user_led_red.pin, 		GPIO_PIN_SET);
 }
 
 
@@ -187,13 +193,23 @@ int main(void)
   MX_ETH_Init();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
+  MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
 
-  // test UART
+  // test UART connection
   printf("hello world\n");
 
-  // setup LED state variables
-  gpio_t active_led = user_led_green;
+  /*
+   * start timer in interrupt mode
+   *
+   * timer has a clock feeding into it at 64MHz
+   * pre-scaler set to 6400, so clock ticks 64,000,000 / 6,400 = 10,000x per second
+   * clock period set to 2500
+   *
+   * so the interrupt will trigger when clock counts to 2,500.
+   * At a tick rate of 10,000x per second, the interrupt triggers every 0.25s
+   */
+  HAL_TIM_Base_Start_IT(&htim16);
 
   /* USER CODE END 2 */
 
@@ -201,23 +217,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	  printf("DEBUG: state=3%u \t mod(state,3)=%1u\n", state, state%3);
+	  // printf("DEBUG: state=3%u \t mod(state,3)=%1u\n", state, state%3);
 	  check_button();
-	  switch(state%3){
-		  case 0:{
-			  active_led = user_led_green;
-			  break;
-		  }
-		  case 1:{
-			  active_led = user_led_yellow;
-			  break;
-		  }
-		  default:{
-			  active_led = user_led_red;
-			  break;
-		  }
-	  }
 
 	  if(is_changed){
 		  turn_all_off(); // turn all LED's off when any change is detected
@@ -225,7 +226,7 @@ int main(void)
 	  }
 
 	  // turn on the active LED
-	  HAL_GPIO_WritePin(active_led.bank, active_led.pin, GPIO_PIN_SET);
+	  // HAL_GPIO_WritePin(active_led.bank, active_led.pin, GPIO_PIN_SET);
 
     /* USER CODE END WHILE */
 
@@ -285,7 +286,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
   RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
@@ -340,6 +341,38 @@ static void MX_ETH_Init(void)
   /* USER CODE BEGIN ETH_Init 2 */
 
   /* USER CODE END ETH_Init 2 */
+
+}
+
+/**
+  * @brief TIM16 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM16_Init(void)
+{
+
+  /* USER CODE BEGIN TIM16_Init 0 */
+
+  /* USER CODE END TIM16_Init 0 */
+
+  /* USER CODE BEGIN TIM16_Init 1 */
+
+  /* USER CODE END TIM16_Init 1 */
+  htim16.Instance = TIM16;
+  htim16.Init.Prescaler = 6400-1;
+  htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim16.Init.Period = 2500-1;
+  htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim16.Init.RepetitionCounter = 0;
+  htim16.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim16) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM16_Init 2 */
+
+  /* USER CODE END TIM16_Init 2 */
 
 }
 
@@ -487,6 +520,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
@@ -515,6 +552,51 @@ GETCHAR_PROTOTYPE
 
 	return ch;
 }
+
+/*
+ * timer reset callback
+ * https://www.youtube.com/watch?v=VfbW6nfG4kw
+ */
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+	/*
+	 * Yong Da, Friday, July 8, 2022
+	 * don't use printf() to print, since it doesn't send the UART transmission right away
+	 * 	it tends to bunch up and send once every 1s, with a lot of messages buffered together
+	 *
+	 * directly use HAL_UART_Transmit to send in real time
+	 */
+	char uart_buf[100];
+	uint32_t uart_buf_len;
+	uart_buf_len = sprintf(uart_buf, "DEBUG: entered timer period elapsed call back, counter_tick=%lu\t state=%d\n", counter_tick, state);
+	HAL_UART_Transmit(&huart3, (uint8_t *)uart_buf, uart_buf_len, HAL_MAX_DELAY);
+
+	// check correct timer
+	if (htim == &htim16){
+		counter_tick++;
+		// HAL_GPIO_TogglePin(user_led_red.bank, user_led_red.pin);
+	}
+
+	// green LED
+	if (state%3 == 0){
+		if (counter_tick%4 == 0){
+			HAL_GPIO_TogglePin(user_led_green.bank, user_led_green.pin);
+		}
+	}
+	// yellow LED
+	else if (state%3 == 1){
+		if (counter_tick%2 == 1){
+			HAL_GPIO_TogglePin(user_led_yellow.bank, user_led_yellow.pin);
+		}
+
+	}
+	// red LED
+	else{
+		HAL_GPIO_TogglePin(user_led_red.bank, user_led_red.pin);
+	}
+}
+
+
 /* USER CODE END 4 */
 
 /**

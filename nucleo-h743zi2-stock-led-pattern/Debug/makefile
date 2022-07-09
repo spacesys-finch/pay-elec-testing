@@ -60,8 +60,8 @@ all: main-build
 main-build: nucleo-h743zi2-stock-led-pattern.elf secondary-outputs
 
 # Tool invocations
-nucleo-h743zi2-stock-led-pattern.elf nucleo-h743zi2-stock-led-pattern.map: $(OBJS) $(USER_OBJS) C:\Users\yongd\STM32CubeIDE\workspace_1.9.0\nucleo-h743zi2-stock-led-pattern\STM32H743ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "nucleo-h743zi2-stock-led-pattern.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\yongd\STM32CubeIDE\workspace_1.9.0\nucleo-h743zi2-stock-led-pattern\STM32H743ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="nucleo-h743zi2-stock-led-pattern.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+nucleo-h743zi2-stock-led-pattern.elf nucleo-h743zi2-stock-led-pattern.map: $(OBJS) $(USER_OBJS) C:\Users\yongd\STM32CubeIDE\pay-elec-testing\nucleo-h743zi2-stock-led-pattern\STM32H743ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "nucleo-h743zi2-stock-led-pattern.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\yongd\STM32CubeIDE\pay-elec-testing\nucleo-h743zi2-stock-led-pattern\STM32H743ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="nucleo-h743zi2-stock-led-pattern.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

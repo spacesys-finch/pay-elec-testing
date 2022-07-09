@@ -9,17 +9,17 @@ CDefines=USE_HAL_DRIVER;STM32H743xx;USE_HAL_DRIVER;USE_HAL_DRIVER;
 [PreviousGenFiles]
 AdvancedFolderStructure=true
 HeaderFileListSize=3
-HeaderFiles#0=C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-stock-led-pattern/Core/Inc/stm32h7xx_it.h
-HeaderFiles#1=C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-stock-led-pattern/Core/Inc/stm32h7xx_hal_conf.h
-HeaderFiles#2=C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-stock-led-pattern/Core/Inc/main.h
+HeaderFiles#0=C:/Users/yongd/STM32CubeIDE/pay-elec-testing/nucleo-h743zi2-stock-led-pattern/Core/Inc/stm32h7xx_it.h
+HeaderFiles#1=C:/Users/yongd/STM32CubeIDE/pay-elec-testing/nucleo-h743zi2-stock-led-pattern/Core/Inc/stm32h7xx_hal_conf.h
+HeaderFiles#2=C:/Users/yongd/STM32CubeIDE/pay-elec-testing/nucleo-h743zi2-stock-led-pattern/Core/Inc/main.h
 HeaderFolderListSize=1
-HeaderPath#0=C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-stock-led-pattern/Core/Inc
+HeaderPath#0=C:/Users/yongd/STM32CubeIDE/pay-elec-testing/nucleo-h743zi2-stock-led-pattern/Core/Inc
 HeaderFiles=;
 SourceFileListSize=3
-SourceFiles#0=C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-stock-led-pattern/Core/Src/stm32h7xx_it.c
-SourceFiles#1=C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-stock-led-pattern/Core/Src/stm32h7xx_hal_msp.c
-SourceFiles#2=C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-stock-led-pattern/Core/Src/main.c
+SourceFiles#0=C:/Users/yongd/STM32CubeIDE/pay-elec-testing/nucleo-h743zi2-stock-led-pattern/Core/Src/stm32h7xx_it.c
+SourceFiles#1=C:/Users/yongd/STM32CubeIDE/pay-elec-testing/nucleo-h743zi2-stock-led-pattern/Core/Src/stm32h7xx_hal_msp.c
+SourceFiles#2=C:/Users/yongd/STM32CubeIDE/pay-elec-testing/nucleo-h743zi2-stock-led-pattern/Core/Src/main.c
 SourceFolderListSize=1
-SourcePath#0=C:/Users/yongd/STM32CubeIDE/workspace_1.9.0/nucleo-h743zi2-stock-led-pattern/Core/Src
+SourcePath#0=C:/Users/yongd/STM32CubeIDE/pay-elec-testing/nucleo-h743zi2-stock-led-pattern/Core/Src
 SourceFiles=;
 
