@@ -3,6 +3,10 @@
 - on release of user button, switch the blinking LED from green -> yellow -> red.
 - green LED flashes every 1s, yellow flashes every 0.5s, red flashes every 0.25s
 
+## references
+- https://www.youtube.com/watch?v=VfbW6nfG4kw
+    - DigiKey STM32 tutorial series by Shawn Hymel
+
 ## Friday, July 8, 2022 - Yong Da
 - working for non-flashing
     - used a single timer (timer16) which generates an interrupt every 0.25 seconds
