@@ -13,3 +13,5 @@
 
 - super loop is blinking LED according to state variable
 - user button press triggers interrupt, which updates state variable
+- in the ISR, probably need to turn off all LEDs and enter the switching function of the new state
+	- otherwise we'd have to wait until the old switching function cycles back to the "check for updated state variable" state
